@@ -1,6 +1,6 @@
 # Remedy
 
-# AI-Enabled Smart Healthcare Platform
+## AI-Enabled Smart Healthcare Platform
 
 Remedy is a **cloud-native healthcare appointment and telemedicine system** developed using a **Microservices Architecture**. It enables patients and doctors to interact through a scalable, secure, and containerized platform.
 
@@ -15,7 +15,7 @@ The platform provides a complete digital healthcare solution including:
 - Appointment scheduling
 - Secure online payments
 - Real-time notifications
-- **Live video consultations (Telemedicine)**
+- Live video consultations (Telemedicine)
 
 All services are independently deployed using **Docker** and orchestrated using **Kubernetes**.
 
@@ -29,7 +29,7 @@ Remedy/
 ├── frontend/                     # React frontend application
 │
 ├── services/                     # Backend microservices
-│   ├── patient-service/
+│   ├── auth-service/
 │   │   ├── src/
 │   │   │   ├── controllers/
 │   │   │   ├── models/
@@ -42,6 +42,7 @@ Remedy/
 │   │   ├── package.json
 │   │   └── .env
 │   │
+│   ├── patient-service/
 │   ├── doctor-service/
 │   ├── appointment-service/
 │   ├── telemedicine-service/
@@ -68,16 +69,22 @@ Remedy/
 
 ## Microservices
 
+### auth Service
+
+- User registration and login
+- Authentication and authorization
+- Updating password and status
+
 ### Patient Service
 
 - Patient registration and authentication
-- Profile management
+- Patient Profile management
 - Uploading medical reports
 - Viewing medical history and prescriptions
 
 ### Doctor Service
 
-- Doctor registration and verification
+- Doctor registration
 - Profile and availability management
 - Viewing patient records
 - Issuing prescriptions
@@ -86,6 +93,7 @@ Remedy/
 
 - Search doctors by specialty
 - Book, update, and cancel appointments
+- Accept / reject appointments
 - Track appointment status
 
 ### Telemedicine Service
@@ -170,7 +178,7 @@ docker-compose up --build
 
 ---
 
-## ☸️ Kubernetes Deployment
+## Kubernetes Deployment
 
 Apply all configurations:
 
