@@ -1,7 +1,6 @@
 import jwt from "jsonwebtoken";
 import axios from "axios";
 import User from "../models/userModel.js";
-import DoctorProfile from "../models/doctorProfileModel.js";
 
 // Generate JWT
 const generateToken = (user) => {
@@ -78,7 +77,43 @@ export const register = async (req, res, next) => {
     }
 
     if (user.role === "doctor") {
-      await DoctorProfile.create({ user: user._id });
+      const doctorServiceUrl = process.env.DOCTOR_SERVICE_URL;
+      const internalToken = process.env.INTERNAL_SERVICE_TOKEN;
+
+      if (!doctorServiceUrl) {
+        await user.deleteOne();
+        return res.status(500).json({
+          success: false,
+          message: "DOCTOR_SERVICE_URL is not configured",
+        });
+      }
+
+      if (!internalToken) {
+        await user.deleteOne();
+        return res.status(500).json({
+          success: false,
+          message: "INTERNAL_SERVICE_TOKEN is not configured",
+        });
+      }
+
+      try {
+        await axios.post(
+          `${doctorServiceUrl.replace(/\/$/, "")}/api/doctor-profiles`,
+          { userId: user._id },
+          {
+            headers: {
+              "x-internal-token": internalToken,
+            },
+            timeout: 5000,
+          },
+        );
+      } catch (serviceError) {
+        await user.deleteOne();
+        return res.status(502).json({
+          success: false,
+          message: "Failed to create doctor profile",
+        });
+      }
     }
 
     const token = generateToken(user);
