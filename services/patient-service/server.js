@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import morgan from "morgan";
 import connectDB from "./src/config/db.js";
+import patientProfileRoutes from "./src/routes/patientProfileRoutes.js";
 
 dotenv.config();
 
@@ -17,6 +18,7 @@ app.use(morgan("dev"));
 connectDB();
 
 // Routes
+app.use("/api/patient-profiles", patientProfileRoutes);
 
 // Test route
 app.get("/api/health", (req, res) => {
