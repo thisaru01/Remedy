@@ -168,7 +168,7 @@ cd Remedy
 ### 2. Start all services
 
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
 
 ### 3. Access the system

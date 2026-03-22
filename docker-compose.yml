@@ -1,0 +1,43 @@
+services:
+  auth-service:
+    build:
+      context: ./services/auth-service
+    container_name: remedy-auth-service
+    restart: unless-stopped
+    environment:
+      PORT: 5000
+      MONGO_URI: ${AUTH_MONGO_URI:?AUTH_MONGO_URI is required}
+      JWT_SECRET: ${JWT_SECRET:-dev_jwt_secret_change_me}
+      JWT_EXPIRE: ${JWT_EXPIRE:-1d}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-dev_internal_token_change_me}
+      PATIENT_SERVICE_URL: http://patient-service:5000
+      DOCTOR_SERVICE_URL: http://doctor-service:5000
+    depends_on:
+      - patient-service
+      - doctor-service
+    ports:
+      - "5000:5000"
+
+  patient-service:
+    build:
+      context: ./services/patient-service
+    container_name: remedy-patient-service
+    restart: unless-stopped
+    environment:
+      PORT: 5000
+      MONGO_URI: ${PATIENT_MONGO_URI:?PATIENT_MONGO_URI is required}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-dev_internal_token_change_me}
+    ports:
+      - "5001:5000"
+
+  doctor-service:
+    build:
+      context: ./services/doctor-service
+    container_name: remedy-doctor-service
+    restart: unless-stopped
+    environment:
+      PORT: 5000
+      MONGO_URI: ${DOCTOR_MONGO_URI:?DOCTOR_MONGO_URI is required}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-dev_internal_token_change_me}
+    ports:
+      - "5002:5000"
