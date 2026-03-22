@@ -41,3 +41,15 @@ services:
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-dev_internal_token_change_me}
     ports:
       - "5002:5000"
+
+  appointment-service:
+    build:
+      context: ./services/appointment-service
+    container_name: remedy-appointment-service
+    restart: unless-stopped
+    environment:
+      PORT: 5000
+      MONGO_URI: ${APPOINTMENT_MONGO_URI:?APPOINTMENT_MONGO_URI is required}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-dev_internal_token_change_me}
+    ports:
+      - "5003:5000"    
