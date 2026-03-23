@@ -52,4 +52,16 @@ services:
       MONGO_URI: ${APPOINTMENT_MONGO_URI:?APPOINTMENT_MONGO_URI is required}
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-dev_internal_token_change_me}
     ports:
-      - "5003:5000"    
+      - "5003:5000"
+
+  telemedicine-service:
+    build:
+      context: ./services/telemedicine-service
+    container_name: remedy-telemedicine-service
+    restart: unless-stopped
+    environment:
+      PORT: 5000
+      MONGO_URI: ${TELEMEDICINE_MONGO_URI:?TELEMEDICINE_MONGO_URI is required}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-dev_internal_token_change_me}
+    ports:
+      - "5004:5000"
