@@ -63,5 +63,7 @@ services:
       PORT: 5000
       MONGO_URI: ${TELEMEDICINE_MONGO_URI:?TELEMEDICINE_MONGO_URI is required}
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-dev_internal_token_change_me}
+      JWT_SECRET: ${JWT_SECRET:-fallback_secret_change_me_in_prod}
+      SKIP_APPOINTMENT_VALIDATION: ${SKIP_APPOINTMENT_VALIDATION:-true}
     ports:
       - "5004:5000"
