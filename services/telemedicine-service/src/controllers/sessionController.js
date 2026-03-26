@@ -1,6 +1,38 @@
 import { v4 as uuidv4 } from "uuid";
 import axios from "axios";
 import Session from "../models/sessionModel.js";
+import {
+  buildJaasJoinUrl,
+  isJaasEnabled,
+  mintJaasRoomToken,
+} from "../config/jaas.js";
+
+const joinTokenRateLimitWindowMs = 60 * 1000;
+const joinTokenMaxRequestsPerWindow = 10;
+const joinTokenRequestCounter = new Map();
+
+const canAccessSession = (session, user) => {
+  return session.patientId === user.id || session.doctorId === user.id || user.role === "admin";
+};
+
+const checkJoinTokenRateLimit = (userId, sessionId) => {
+  const now = Date.now();
+  const key = `${userId}:${sessionId}`;
+  const bucket = joinTokenRequestCounter.get(key) || {
+    count: 0,
+    resetAt: now + joinTokenRateLimitWindowMs,
+  };
+
+  if (now > bucket.resetAt) {
+    bucket.count = 0;
+    bucket.resetAt = now + joinTokenRateLimitWindowMs;
+  }
+
+  bucket.count += 1;
+  joinTokenRequestCounter.set(key, bucket);
+
+  return bucket.count <= joinTokenMaxRequestsPerWindow;
+};
 
 /**
  * Validates the appointment details with the Appointment Service.
@@ -47,8 +79,9 @@ const validateWithAppointmentService = async (appointmentId) => {
 // Generate random room URL
 const generateSecureRoomUrl = () => {
   const roomName = `Remedy-Consult-${uuidv4()}`;
-  const baseUrl = process.env.JITSI_DOMAIN || "https://meet.jit.si";
-  const joinUrl = `${baseUrl}/${roomName}`;
+  const joinUrl = isJaasEnabled()
+    ? buildJaasJoinUrl(roomName)
+    : `${process.env.JITSI_DOMAIN || "https://meet.jit.si"}/${roomName}`;
   return { roomName, joinUrl };
 };
 
@@ -123,8 +156,7 @@ export const getSessionById = async (req, res, next) => {
       });
     }
 
-    const userId = req.user.id;
-    if (session.patientId !== userId && session.doctorId !== userId) {
+    if (!canAccessSession(session, req.user)) {
       return res.status(403).json({
         success: false,
         message: "Access denied. You are not a participant in this session.",
@@ -189,6 +221,14 @@ export const updateSessionStatus = async (req, res, next) => {
  */
 export const getSessionsByPatient = async (req, res, next) => {
   try {
+    const requestedPatientId = req.params.patientId;
+    if (req.user.role !== "admin" && (req.user.role !== "patient" || req.user.id !== requestedPatientId)) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. You can only view your own patient sessions.",
+      });
+    }
+
     const sessions = await Session.find({ patientId: req.params.patientId }).sort({ scheduledAt: -1 });
     return res.status(200).json({ success: true, count: sessions.length, data: sessions });
   } catch (error) {
@@ -203,8 +243,69 @@ export const getSessionsByPatient = async (req, res, next) => {
  */
 export const getSessionsByDoctor = async (req, res, next) => {
   try {
+    const requestedDoctorId = req.params.doctorId;
+    if (req.user.role !== "admin" && (req.user.role !== "doctor" || req.user.id !== requestedDoctorId)) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. You can only view your own doctor sessions.",
+      });
+    }
+
     const sessions = await Session.find({ doctorId: req.params.doctorId }).sort({ scheduledAt: -1 });
     return res.status(200).json({ success: true, count: sessions.length, data: sessions });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+/**
+ * @desc    Get secure join details for a session
+ * @route   GET /api/sessions/:id/join
+ * @access  Private (Session participants)
+ */
+export const getSessionJoinDetails = async (req, res, next) => {
+  try {
+    const session = await Session.findById(req.params.id);
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        message: "Session not found",
+      });
+    }
+
+    if (!canAccessSession(session, req.user)) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. You are not a participant in this session.",
+      });
+    }
+
+    if (!checkJoinTokenRateLimit(req.user.id, session.id)) {
+      return res.status(429).json({
+        success: false,
+        message: "Too many join requests. Please try again shortly.",
+      });
+    }
+
+    const jaasEnabled = isJaasEnabled();
+    const joinDetails = {
+      roomName: session.roomName,
+      joinUrl: session.joinUrl,
+      mode: jaasEnabled ? "jaas" : "public-jitsi",
+    };
+
+    if (jaasEnabled) {
+      joinDetails.token = mintJaasRoomToken({
+        roomName: session.roomName,
+        user: req.user,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: joinDetails,
+    });
   } catch (error) {
     return next(error);
   }

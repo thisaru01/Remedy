@@ -2,6 +2,7 @@ import express from "express";
 import {
   createSession,
   getSessionById,
+  getSessionJoinDetails,
   updateSessionStatus,
   getSessionsByPatient,
   getSessionsByDoctor,
@@ -16,14 +17,17 @@ router.use(jwtAuthMiddleware);
 // Create a session
 router.post("/", createSession);
 
+// List sessions for a specific user
+router.get("/patient/:patientId", getSessionsByPatient);
+router.get("/doctor/:doctorId", getSessionsByDoctor);
+
+// Get secure join details for a session
+router.get("/:id/join", getSessionJoinDetails);
+
 // Get a specific session
 router.get("/:id", getSessionById);
 
 // Update status (e.g. active / ended)
 router.patch("/:id/status", updateSessionStatus);
-
-// List sessions for a specific user
-router.get("/patient/:patientId", getSessionsByPatient);
-router.get("/doctor/:doctorId", getSessionsByDoctor);
 
 export default router;

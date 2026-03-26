@@ -65,5 +65,7 @@ services:
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-dev_internal_token_change_me}
       JWT_SECRET: ${JWT_SECRET:-fallback_secret_change_me_in_prod}
       SKIP_APPOINTMENT_VALIDATION: ${SKIP_APPOINTMENT_VALIDATION:-true}
+    env_file:
+      - ./services/telemedicine-service/.env
     ports:
       - "5004:5000"
