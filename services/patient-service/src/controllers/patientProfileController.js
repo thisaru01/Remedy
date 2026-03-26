@@ -24,7 +24,7 @@ export const createPatientProfile = async (req, res, next) => {
 
     const profile = await PatientProfile.findOneAndUpdate({ userId }, update, {
       upsert: true,
-      new: true,
+      returnDocument: "after",
       runValidators: true,
     });
 
@@ -64,7 +64,7 @@ export const updatePatientProfile = async (req, res, next) => {
     const profile = await PatientProfile.findOneAndUpdate(
       { userId },
       { $set: set },
-      { new: true, runValidators: true },
+      { returnDocument: "after", runValidators: true },
     );
 
     if (!profile) {
@@ -111,7 +111,7 @@ export const updateMyPatientProfile = async (req, res, next) => {
     const profile = await PatientProfile.findOneAndUpdate(
       { userId },
       { $set: set },
-      { new: true, runValidators: true },
+      { returnDocument: "after", runValidators: true },
     );
 
     if (!profile) {
