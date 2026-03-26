@@ -24,7 +24,7 @@ export const createDoctorProfile = async (req, res, next) => {
 
     const profile = await DoctorProfile.findOneAndUpdate({ userId }, update, {
       upsert: true,
-      new: true,
+      returnDocument: "after",
       runValidators: true,
     });
 
