@@ -4,11 +4,11 @@ export const createTelemedicineRoutes = ({ protect, proxyTo, services }) => {
   const router = express.Router();
 
   router.use(
-    "/api/telemedicine",
+    "/api/telemedicine/sessions",
     protect,
     proxyTo(services.telemedicine, {
       addUserContext: true,
-      basePath: "/api/telemedicine",
+      basePath: "/api/sessions",
     }),
   );
 

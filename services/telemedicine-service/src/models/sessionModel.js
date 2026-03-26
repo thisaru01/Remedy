@@ -17,6 +17,14 @@ const sessionSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    doctorName: {
+      type: String,
+      trim: true,
+    },
+    patientName: {
+      type: String,
+      trim: true,
+    },
     roomName: {
       type: String,
       required: true,

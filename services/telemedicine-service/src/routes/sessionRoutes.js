@@ -7,12 +7,12 @@ import {
   getSessionsByPatient,
   getSessionsByDoctor,
 } from "../controllers/sessionController.js";
-import jwtAuthMiddleware from "../middleware/jwtAuthMiddleware.js";
+import internalAuthMiddleware from "../middleware/internalAuthMiddleware.js";
 
 const router = express.Router();
 
-// Apply JWT authentication to all session routes
-router.use(jwtAuthMiddleware);
+// Apply internal gateway authentication to all session routes
+router.use(internalAuthMiddleware);
 
 // Create a session
 router.post("/", createSession);

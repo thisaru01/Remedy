@@ -87,6 +87,7 @@ export const buildJaasJoinUrl = (roomName) => {
 
 export const mintJaasRoomToken = ({ roomName, user }) => {
   const { appId, keyId, privateKey } = getJaasConfig();
+  const expiresIn = (process.env.JAAS_TOKEN_EXPIRES_IN || "365d").trim();
 
   const moderator = String(user.role).toLowerCase() === "doctor";
 
@@ -106,7 +107,7 @@ export const mintJaasRoomToken = ({ roomName, user }) => {
 
   return jwt.sign(payload, privateKey, {
     algorithm: "RS256",
-    expiresIn: "10m",
+    expiresIn,
     header: {
       kid: keyId,
       typ: "JWT",

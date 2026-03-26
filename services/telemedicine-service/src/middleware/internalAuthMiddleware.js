@@ -18,12 +18,19 @@ const internalAuthMiddleware = (req, res, next) => {
 
   const userId = req.header("x-user-id");
   const role = req.header("x-user-role");
-  if (userId || role) {
-    req.user = {
-      ...(userId ? { id: userId } : {}),
-      ...(role ? { role } : {}),
-    };
+  const name = req.header("x-user-name");
+  if (!userId || !role) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized: missing user context",
+    });
   }
+
+  req.user = {
+    id: userId,
+    name: name || "",
+    role,
+  };
 
   return next();
 };

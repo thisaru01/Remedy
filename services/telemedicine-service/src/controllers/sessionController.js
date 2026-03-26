@@ -1,89 +1,14 @@
-import { v4 as uuidv4 } from "uuid";
-import axios from "axios";
 import Session from "../models/sessionModel.js";
 import {
-  buildJaasJoinUrl,
   isJaasEnabled,
   mintJaasRoomToken,
 } from "../config/jaas.js";
-
-const joinTokenRateLimitWindowMs = 60 * 1000;
-const joinTokenMaxRequestsPerWindow = 10;
-const joinTokenRequestCounter = new Map();
-
-const canAccessSession = (session, user) => {
-  return session.patientId === user.id || session.doctorId === user.id || user.role === "admin";
-};
-
-const checkJoinTokenRateLimit = (userId, sessionId) => {
-  const now = Date.now();
-  const key = `${userId}:${sessionId}`;
-  const bucket = joinTokenRequestCounter.get(key) || {
-    count: 0,
-    resetAt: now + joinTokenRateLimitWindowMs,
-  };
-
-  if (now > bucket.resetAt) {
-    bucket.count = 0;
-    bucket.resetAt = now + joinTokenRateLimitWindowMs;
-  }
-
-  bucket.count += 1;
-  joinTokenRequestCounter.set(key, bucket);
-
-  return bucket.count <= joinTokenMaxRequestsPerWindow;
-};
-
-/**
- * Validates the appointment details with the Appointment Service.
- * Fails gracefully if the service is unreachable.
- */
-const validateWithAppointmentService = async (appointmentId) => {
-  if (String(process.env.SKIP_APPOINTMENT_VALIDATION).trim() === "true") {
-    console.warn("Skipping appointment validation");
-    return true; // Skip validation for standalone testing
-  }
-
-  try {
-    const appointmentServiceUrl = process.env.APPOINTMENT_SERVICE_URL || "http://appointment-service:5000";
-    
-    // Fetch appointment details
-    const response = await axios.get(`${appointmentServiceUrl}/api/appointments/${appointmentId}`, {
-      headers: {
-        "x-internal-token": process.env.INTERNAL_SERVICE_TOKEN
-      },
-      timeout: 3000, 
-    });
-
-    const appointment = response.data.data;
-
-    // Ensure appointment is meant for telemedicine
-    if (appointment.type !== "ONLINE") {
-      console.error(`Appointment ${appointmentId} is physical, not online.`);
-      return false;
-    }
-    
-    // Ensure appointment is paid
-    if (appointment.status !== "PAID") {
-      console.error(`Appointment ${appointmentId} is not paid yet.`);
-      return false;
-    }
-
-    return true;
-  } catch (error) {
-    console.error(`Appointment validation failed for ${appointmentId}: ${error.message}`);
-    return false; // Force failure if service is down or returns 404
-  }
-};
-
-// Generate random room URL
-const generateSecureRoomUrl = () => {
-  const roomName = `Remedy-Consult-${uuidv4()}`;
-  const joinUrl = isJaasEnabled()
-    ? buildJaasJoinUrl(roomName)
-    : `${process.env.JITSI_DOMAIN || "https://meet.jit.si"}/${roomName}`;
-  return { roomName, joinUrl };
-};
+import {
+  canAccessSession,
+  checkJoinTokenRateLimit,
+  generateSecureRoomUrl,
+  validateWithAppointmentService,
+} from "../services/sessionService.js";
 
 
 /**
@@ -124,6 +49,7 @@ export const createSession = async (req, res, next) => {
       appointmentId,
       patientId,
       doctorId,
+      doctorName: req.user.name || "",
       roomName,
       joinUrl,
       scheduledAt,
