@@ -49,9 +49,8 @@ Remedy/
 │   ├── payment-service/
 │   └── notification-service/
 │
-├── gateway/                      # NGINX API Gateway
-│   ├── nginx.conf
-│   └── Dockerfile
+├── gateway/                      # Express API Gateway
+│
 │
 ├── docker-compose.yml            # Local container orchestration
 │
@@ -112,11 +111,11 @@ Remedy/
 - Send email and SMS notifications
 - Appointment confirmations and updates
 
-### API Gateway (NGINX)
+### API Gateway (Express)
 
 - Central entry point for all client requests
-- Routes requests to appropriate services
-- Provides load balancing
+- Verifies JWT from `Authorization: Bearer <token>`
+- Routes requests to appropriate services and forwards trusted user context internally
 
 ---
 
@@ -174,7 +173,13 @@ docker compose up --build
 ### 3. Access the system
 
 - Frontend: http://localhost:3000
-- API Gateway: http://localhost
+- API Gateway: http://localhost:8080
+
+### Example gateway calls
+
+- Login: `POST http://localhost:8080/api/auth/login`
+- Update patient profile (current user): `PUT http://localhost:8080/api/patient-profiles/me`
+  - Header: `Authorization: Bearer <token>`
 
 ---
 
