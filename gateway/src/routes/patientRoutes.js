@@ -1,30 +1,24 @@
 import express from "express";
 
+import { authorizeRoles } from "../middleware/protect.js";
+
 export const createPatientRoutes = ({ protect, proxyTo, services }) => {
   const router = express.Router();
 
+  router.use("/api/patient-profiles", protect);
+
   router.use(
     "/api/patient-profiles/me",
-    protect,
+    authorizeRoles("patient"),
     proxyTo(services.patient, {
       addUserContext: true,
-      basePath: "/api/patient-profiles/me",
+      basePath: "/api/patient-profiles",
     }),
   );
 
-  router.use(
+  router.get(
     "/api/patient-profiles/:id",
-    protect,
-    (req, res, next) => {
-      const role = req.user?.role;
-      if (role !== "doctor" && role !== "admin") {
-        return res.status(403).json({
-          success: false,
-          message: "Access denied",
-        });
-      }
-      return next();
-    },
+    authorizeRoles("doctor", "admin"),
     proxyTo(services.patient, {
       addUserContext: true,
       basePath: "/api/patient-profiles",
