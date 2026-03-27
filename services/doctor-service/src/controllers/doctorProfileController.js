@@ -234,3 +234,46 @@ export const submitOwnDoctorVerification = async (req, res, next) => {
     return next(error);
   }
 };
+
+export const getApprovedDoctorProfiles = async (req, res, next) => {
+  try {
+    const profiles = await DoctorProfile.find({
+      "verification.status": "approved",
+    }).sort({ updatedAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: profiles.length,
+      profiles,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const getApprovedDoctorProfilesBySpecialty = async (req, res, next) => {
+  try {
+    const { specialty } = req.params;
+
+    if (!specialty) {
+      return res.status(400).json({
+        success: false,
+        message: "specialty is required",
+      });
+    }
+
+    const profiles = await DoctorProfile.find({
+      "verification.status": "approved",
+      specialty,
+    }).sort({ updatedAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      specialty,
+      count: profiles.length,
+      profiles,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
