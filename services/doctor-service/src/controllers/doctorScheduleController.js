@@ -1,63 +1,31 @@
-import DoctorSchedule from "../models/doctorScheduleModel.js";
-import { DOCTOR_SCHEDULE_DAYS } from "../utils/doctorScheduleTimeUtils.js";
-
-const getCurrentDoctorContext = (req) => {
-  const userId = req.user?.id;
-  const role = req.user?.role;
-
-  return {
-    userId,
-    role,
-  };
-};
+import {
+  createDoctorSchedule,
+  getAllSchedules,
+  getSchedulesByDoctorId,
+  getSchedulesForDoctor,
+  updateDayAvailabilityForDoctor,
+} from "../services/doctorScheduleService.js";
+import {
+  ensureDoctorAccess,
+  getCurrentDoctorContext,
+  validateCreateSchedulePayload,
+  validateDayAvailabilityPayload,
+  validateDoctorIdParam,
+} from "../utils/validation.js";
 
 export const createOwnDoctorSchedule = async (req, res, next) => {
   try {
-    const { userId, role } = getCurrentDoctorContext(req);
-
-    if (!userId) {
-      return res.status(400).json({
-        success: false,
-        message: "Authenticated user id is required",
-      });
-    }
-
-    if (role !== "doctor") {
-      return res.status(403).json({
-        success: false,
-        message: "Only doctors can create schedules",
-      });
-    }
+    const context = getCurrentDoctorContext(req);
+    if (!ensureDoctorAccess(res, context, "create schedules")) return;
 
     const { day, startTime, isAvailable } = req.body;
+    if (!validateCreateSchedulePayload(res, req.body)) return;
 
-    if (!day || !startTime) {
-      return res.status(400).json({
-        success: false,
-        message: "day and startTime are required",
-      });
-    }
-
-    if (isAvailable !== undefined && typeof isAvailable !== "boolean") {
-      return res.status(400).json({
-        success: false,
-        message: "isAvailable must be true or false",
-      });
-    }
-
-    if (req.body.slotCount !== undefined) {
-      return res.status(400).json({
-        success: false,
-        message: "slotCount is fixed to 6 and cannot be changed",
-      });
-    }
-
-    const schedule = await DoctorSchedule.create({
-      doctorUserId: userId,
+    const schedule = await createDoctorSchedule({
+      doctorUserId: context.userId,
       day,
       startTime,
-      slotCount: 6,
-      ...(isAvailable !== undefined ? { isAvailable } : {}),
+      isAvailable,
     });
 
     return res.status(201).json({
@@ -86,26 +54,10 @@ export const createOwnDoctorSchedule = async (req, res, next) => {
 
 export const getOwnDoctorSchedules = async (req, res, next) => {
   try {
-    const { userId, role } = getCurrentDoctorContext(req);
+    const context = getCurrentDoctorContext(req);
+    if (!ensureDoctorAccess(res, context, "view schedules")) return;
 
-    if (!userId) {
-      return res.status(400).json({
-        success: false,
-        message: "Authenticated user id is required",
-      });
-    }
-
-    if (role !== "doctor") {
-      return res.status(403).json({
-        success: false,
-        message: "Only doctors can view schedules",
-      });
-    }
-
-    const schedules = await DoctorSchedule.find({ doctorUserId: userId }).sort({
-      day: 1,
-      startTime: 1,
-    });
+    const schedules = await getSchedulesForDoctor(context.userId);
 
     return res.status(200).json({
       success: true,
@@ -118,48 +70,21 @@ export const getOwnDoctorSchedules = async (req, res, next) => {
 
 export const updateOwnDoctorDayAvailability = async (req, res, next) => {
   try {
-    const { userId, role } = getCurrentDoctorContext(req);
-
-    if (!userId) {
-      return res.status(400).json({
-        success: false,
-        message: "Authenticated user id is required",
-      });
-    }
-
-    if (role !== "doctor") {
-      return res.status(403).json({
-        success: false,
-        message: "Only doctors can update schedule availability",
-      });
+    const context = getCurrentDoctorContext(req);
+    if (!ensureDoctorAccess(res, context, "update schedule availability")) {
+      return;
     }
 
     const { day } = req.params;
     const { isAvailable } = req.body;
 
-    if (!DOCTOR_SCHEDULE_DAYS.includes(day)) {
-      return res.status(400).json({
-        success: false,
-        message: `day must be one of: ${DOCTOR_SCHEDULE_DAYS.join(", ")}`,
-      });
-    }
+    if (!validateDayAvailabilityPayload(res, day, isAvailable)) return;
 
-    if (typeof isAvailable !== "boolean") {
-      return res.status(400).json({
-        success: false,
-        message: "isAvailable is required and must be true or false",
-      });
-    }
-
-    const result = await DoctorSchedule.updateMany(
-      {
-        doctorUserId: userId,
-        day,
-      },
-      {
-        $set: { isAvailable },
-      },
-    );
+    const result = await updateDayAvailabilityForDoctor({
+      doctorUserId: context.userId,
+      day,
+      isAvailable,
+    });
 
     if (result.matchedCount === 0) {
       return res.status(404).json({
@@ -184,17 +109,9 @@ export const getScheduleByDoctorId = async (req, res, next) => {
   try {
     const { doctorId } = req.params;
 
-    if (!doctorId) {
-      return res.status(400).json({
-        success: false,
-        message: "doctorId is required",
-      });
-    }
+    if (!validateDoctorIdParam(res, doctorId)) return;
 
-    const schedules = await DoctorSchedule.find({ doctorUserId: doctorId }).sort({
-      day: 1,
-      startTime: 1,
-    });
+    const schedules = await getSchedulesByDoctorId(doctorId);
 
     if (schedules.length === 0) {
       return res.status(404).json({
@@ -214,11 +131,7 @@ export const getScheduleByDoctorId = async (req, res, next) => {
 
 export const getAllDoctorSchedules = async (req, res, next) => {
   try {
-    const schedules = await DoctorSchedule.find().sort({
-      doctorUserId: 1,
-      day: 1,
-      startTime: 1,
-    });
+    const schedules = await getAllSchedules();
 
     if (schedules.length === 0) {
       return res.status(200).json({
