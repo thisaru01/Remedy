@@ -211,3 +211,29 @@ export const getScheduleByDoctorId = async (req, res, next) => {
     return next(error);
   }
 };
+
+export const getAllDoctorSchedules = async (req, res, next) => {
+  try {
+    const schedules = await DoctorSchedule.find().sort({
+      doctorUserId: 1,
+      day: 1,
+      startTime: 1,
+    });
+
+    if (schedules.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: "No schedules found",
+        schedules: [],
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      count: schedules.length,
+      schedules,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
