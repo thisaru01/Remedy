@@ -20,6 +20,7 @@ export const createProxyTo = ({ internalServiceToken }) => {
           if (addUserContext) {
             proxyReq.setHeader("x-internal-token", internalServiceToken);
             if (req.user?.id) proxyReq.setHeader("x-user-id", req.user.id);
+            if (req.user?.name) proxyReq.setHeader("x-user-name", req.user.name);
             if (req.user?.role)
               proxyReq.setHeader("x-user-role", req.user.role);
           }
