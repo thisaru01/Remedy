@@ -14,25 +14,12 @@ const appointmentSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
-    appointmentId: {
-      type: String,
-      required: true,
-      unique: true,
-      index: true,
-    },
     appointmentNumber: {
       type: String,
       required: true,
       unique: true,
     },
-    date: {
-      type: Date,
-      required: true,
-    },
-    time: {
-      type: String,
-      required: true,
-    },
+    // Removed `date` and `time` fields — scheduling can be handled elsewhere
     status: {
       type: String,
       enum: ["pending", "accepted", "rejected", "cancelled", "completed"],
@@ -44,6 +31,11 @@ const appointmentSchema = new mongoose.Schema(
       enum: ["pending", "success", "failed"],
       required: true,
       default: "pending",
+    },
+    scheduleId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Schedule",
+      index: true,
     },
     reportIds: [
       {
