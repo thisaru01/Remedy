@@ -3,6 +3,7 @@ import cors from "cors";
 import morgan from "morgan";
 
 import patientProfileRoutes from "./routes/patientProfileRoutes.js";
+import patientReportRoutes from "./routes/patientReportRoutes.js";
 
 const app = express();
 
@@ -17,5 +18,6 @@ app.get("/api/health", (req, res) => {
 
 // Routes
 app.use("/api/patient-profiles", patientProfileRoutes);
+app.use("/api/patient-reports", patientReportRoutes);
 
 export default app;

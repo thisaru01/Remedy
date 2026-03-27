@@ -6,6 +6,7 @@ export const createPatientRoutes = ({ protect, proxyTo, services }) => {
   const router = express.Router();
 
   router.use("/api/patient-profiles", protect);
+  router.use("/api/patient-reports", protect);
 
   router.use(
     "/api/patient-profiles/me",
@@ -22,6 +23,15 @@ export const createPatientRoutes = ({ protect, proxyTo, services }) => {
     proxyTo(services.patient, {
       addUserContext: true,
       basePath: "/api/patient-profiles",
+    }),
+  );
+
+  router.use(
+    "/api/patient-reports",
+    authorizeRoles("patient"),
+    proxyTo(services.patient, {
+      addUserContext: true,
+      basePath: "/api/patient-reports",
     }),
   );
 
