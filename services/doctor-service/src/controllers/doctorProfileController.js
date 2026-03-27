@@ -12,22 +12,26 @@ const getCurrentDoctorContext = (req) => {
 
 const doctorUpdatableFields = [
   "specialty",
-  "phone",
-  "address",
+  "contactNo",
   "bio",
   "gender",
-  "dateOfBirth",
-  "yearsOfExperience",
-  "consultationFee",
   "languages",
   "educations",
-  "workExperiences",
   "workingHospitals",
 ];
 
 export const createDoctorProfile = async (req, res, next) => {
   try {
-    const { userId, specialty, phone, address, bio } = req.body;
+    const {
+      userId,
+      specialty,
+      contactNo,
+      gender,
+      bio,
+      languages,
+      educations,
+      workingHospitals,
+    } = req.body;
 
     if (!userId) {
       return res.status(400).json({
@@ -38,9 +42,14 @@ export const createDoctorProfile = async (req, res, next) => {
 
     const set = {};
     if (specialty !== undefined) set.specialty = specialty;
-    if (phone !== undefined) set.phone = phone;
-    if (address !== undefined) set.address = address;
+    if (contactNo !== undefined) set.contactNo = contactNo;
+    if (gender !== undefined) set.gender = gender;
     if (bio !== undefined) set.bio = bio;
+    if (languages !== undefined) set.languages = languages;
+    if (educations !== undefined) set.educations = educations;
+    if (workingHospitals !== undefined) {
+      set.workingHospitals = workingHospitals;
+    }
 
     const update = {
       $setOnInsert: { userId },
@@ -171,19 +180,14 @@ export const submitOwnDoctorVerification = async (req, res, next) => {
       });
     }
 
-    const {
-      idType,
-      idNumber,
-      medicalLicenseNumber,
-      medicalCouncil,
-      idDocumentUrl,
-      licenseDocumentUrl,
-    } = req.body;
+    const { medicalLicenseNumber, medicalCouncil, licenseDocumentUrl } =
+      req.body;
 
-    if (!idType || !idNumber || !medicalLicenseNumber) {
+    if (!medicalLicenseNumber || !licenseDocumentUrl) {
       return res.status(400).json({
         success: false,
-        message: "idType, idNumber and medicalLicenseNumber are required",
+        message:
+          "medicalLicenseNumber and licenseDocumentUrl are required",
       });
     }
 
@@ -194,13 +198,9 @@ export const submitOwnDoctorVerification = async (req, res, next) => {
         $set: {
           verification: {
             status: "submitted",
-            idType,
-            idNumber,
             medicalLicenseNumber,
             medicalCouncil,
-            idDocumentUrl,
             licenseDocumentUrl,
-            submittedAt: new Date(),
           },
         },
       },

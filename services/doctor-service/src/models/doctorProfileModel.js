@@ -14,52 +14,6 @@ const educationSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    startYear: {
-      type: Number,
-      min: 1900,
-      max: 3000,
-    },
-    endYear: {
-      type: Number,
-      min: 1900,
-      max: 3000,
-    },
-    currentlyStudying: {
-      type: Boolean,
-      default: false,
-    },
-    description: {
-      type: String,
-      trim: true,
-    },
-  },
-  { _id: false },
-);
-
-const workExperienceSchema = new mongoose.Schema(
-  {
-    hospital: {
-      type: String,
-      trim: true,
-    },
-    position: {
-      type: String,
-      trim: true,
-    },
-    department: {
-      type: String,
-      trim: true,
-    },
-    startDate: {
-      type: Date,
-    },
-    endDate: {
-      type: Date,
-    },
-    isCurrent: {
-      type: Boolean,
-      default: false,
-    },
     description: {
       type: String,
       trim: true,
@@ -70,19 +24,19 @@ const workExperienceSchema = new mongoose.Schema(
 
 const workingHospitalSchema = new mongoose.Schema(
   {
-    name: {
+    hospitalName: {
       type: String,
       trim: true,
     },
-    address: {
+    department: {
       type: String,
       trim: true,
     },
-    city: {
+    position: {
       type: String,
       trim: true,
     },
-    state: {
+    description: {
       type: String,
       trim: true,
     },
@@ -90,13 +44,9 @@ const workingHospitalSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    contactNumber: {
+    city: {
       type: String,
       trim: true,
-    },
-    isPrimary: {
-      type: Boolean,
-      default: false,
     },
   },
   { _id: false },
@@ -112,30 +62,30 @@ const doctorProfileSchema = new mongoose.Schema(
     },
     specialty: {
       type: String,
+      enum: [
+        "General Physician",
+        "Cardiologist",
+        "Dermatologist",
+        "Pediatrician",
+        "Orthopedic Surgeon",
+        "Gynecologist",
+        "Neurologist",
+        "Psychiatrist",
+        "ENT Specialist",
+        "Ophthalmologist",
+      ],
     },
-    phone: {
+    contactNo: {
       type: String,
-    },
-    address: {
-      type: String,
+      trim: true,
     },
     bio: {
       type: String,
+      trim: true,
     },
     gender: {
       type: String,
       enum: ["male", "female", "other"],
-    },
-    dateOfBirth: {
-      type: Date,
-    },
-    yearsOfExperience: {
-      type: Number,
-      min: 0,
-    },
-    consultationFee: {
-      type: Number,
-      min: 0,
     },
     languages: {
       type: [String],
@@ -143,10 +93,6 @@ const doctorProfileSchema = new mongoose.Schema(
     },
     educations: {
       type: [educationSchema],
-      default: [],
-    },
-    workExperiences: {
-      type: [workExperienceSchema],
       default: [],
     },
     workingHospitals: {
@@ -159,14 +105,6 @@ const doctorProfileSchema = new mongoose.Schema(
         enum: ["not_submitted", "submitted", "approved", "rejected"],
         default: "not_submitted",
       },
-      idType: {
-        type: String,
-        trim: true,
-      },
-      idNumber: {
-        type: String,
-        trim: true,
-      },
       medicalLicenseNumber: {
         type: String,
         trim: true,
@@ -175,16 +113,9 @@ const doctorProfileSchema = new mongoose.Schema(
         type: String,
         trim: true,
       },
-      idDocumentUrl: {
-        type: String,
-        trim: true,
-      },
       licenseDocumentUrl: {
         type: String,
         trim: true,
-      },
-      submittedAt: {
-        type: Date,
       },
     },
   },
