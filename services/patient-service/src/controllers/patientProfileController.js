@@ -131,6 +131,41 @@ export const updateMyPatientProfile = async (req, res, next) => {
   }
 };
 
+export const getMyPatientProfile = async (req, res, next) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "x-user-id header is required",
+      });
+    }
+
+    if (!mongoose.isValidObjectId(userId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user id",
+      });
+    }
+
+    const profile = await PatientProfile.findOne({ userId });
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        message: "Patient profile not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      profile,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 export const getPatientProfileByUserId = async (req, res, next) => {
   try {
     const { id } = req.params;
