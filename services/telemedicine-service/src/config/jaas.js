@@ -1,5 +1,7 @@
 import jwt from "jsonwebtoken";
 
+const DEFAULT_JAAS_TOKEN_EXPIRES_IN = "365d";
+
 const trimQuotes = (value) => {
   if (typeof value !== "string") {
     return "";
@@ -59,10 +61,6 @@ export const getJaasConfig = () => {
 };
 
 export const validateJaasConfig = () => {
-  if (!isJaasEnabled()) {
-    return;
-  }
-
   const { appId, keyId, privateKey, domain } = getJaasConfig();
   const missing = [];
 
@@ -87,7 +85,7 @@ export const buildJaasJoinUrl = (roomName) => {
 
 export const mintJaasRoomToken = ({ roomName, user }) => {
   const { appId, keyId, privateKey } = getJaasConfig();
-  const expiresIn = (process.env.JAAS_TOKEN_EXPIRES_IN || "365d").trim();
+  const expiresIn = (process.env.JAAS_TOKEN_EXPIRES_IN || DEFAULT_JAAS_TOKEN_EXPIRES_IN).trim();
 
   const moderator = String(user.role).toLowerCase() === "doctor";
 

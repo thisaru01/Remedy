@@ -6,8 +6,32 @@ import sessionRoutes from "./routes/sessionRoutes.js";
 
 const app = express();
 
+const getAllowedOrigins = () => {
+  return (process.env.CORS_ORIGINS || "http://localhost:3000,http://localhost:5173,http://localhost:4173")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+};
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    const allowedOrigins = getAllowedOrigins();
+
+    // Allow non-browser requests (e.g., Postman, service-to-service calls)
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error("CORS policy: Origin not allowed"));
+  },
+};
+
 // Core Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(morgan("dev"));
 

@@ -1,14 +1,72 @@
-import Session from "../models/sessionModel.js";
 import {
-  isJaasEnabled,
   mintJaasRoomToken,
 } from "../config/jaas.js";
+import { createSessionRecord } from "../repositories/sessionRepository.js";
 import {
-  canAccessSession,
-  checkJoinTokenRateLimit,
+  getAccessibleSessionByAppointmentIdOrError,
+  getAccessibleSessionByIdOrError,
+  getPaginatedSessions,
+  getSessionByIdOrError,
+  validateCreateSessionPayload,
+  validateSessionStatusInput,
   generateSecureRoomUrl,
   validateWithAppointmentService,
 } from "../services/sessionService.js";
+import {
+  canCreateSessionForDoctor,
+  canUpdateSessionStatus,
+  canViewAllSessions,
+  canViewDoctorSessions,
+  canViewPatientSessions,
+} from "../policies/sessionPolicy.js";
+
+const defaultDeps = {
+  mintJaasRoomToken,
+  createSessionRecord,
+  getAccessibleSessionByAppointmentIdOrError,
+  getAccessibleSessionByIdOrError,
+  getPaginatedSessions,
+  getSessionByIdOrError,
+  validateCreateSessionPayload,
+  validateSessionStatusInput,
+  generateSecureRoomUrl,
+  validateWithAppointmentService,
+  canCreateSessionForDoctor,
+  canUpdateSessionStatus,
+  canViewAllSessions,
+  canViewDoctorSessions,
+  canViewPatientSessions,
+};
+
+const controllerDeps = { ...defaultDeps };
+
+// Test hook: allow controller unit tests to replace imported dependencies safely.
+export const __setSessionControllerDepsForTest = (overrides = {}) => {
+  Object.assign(controllerDeps, overrides);
+};
+
+export const __resetSessionControllerDepsForTest = () => {
+  Object.assign(controllerDeps, defaultDeps);
+};
+
+const sendError = (res, status, message) => {
+  return res.status(status).json({
+    success: false,
+    message,
+  });
+};
+
+const sendData = (res, status, data, extra = {}) => {
+  return res.status(status).json({
+    success: true,
+    ...extra,
+    data,
+  });
+};
+
+const sendServiceError = (res, result) => {
+  return sendError(res, result.error.status, result.error.message);
+};
 
 
 /**
@@ -20,32 +78,32 @@ export const createSession = async (req, res, next) => {
   try {
     const { appointmentId, patientId, doctorId, scheduledAt } = req.body;
 
-    if (!appointmentId || !patientId || !doctorId || !scheduledAt) {
-      return res.status(400).json({
-        success: false,
-        message: "Missing required fields: appointmentId, patientId, doctorId, scheduledAt",
-      });
+    const createValidation = controllerDeps.validateCreateSessionPayload({ appointmentId, patientId, doctorId, scheduledAt });
+    if (createValidation.error) {
+      return sendServiceError(res, createValidation);
     }
 
-    // Role-based Access Control: Only the assigned doctor can manually create the meeting
-    if (req.user.role !== "doctor" || req.user.id !== doctorId) {
-      return res.status(403).json({
-        success: false,
-        message: "Access Denied: Only the doctor assigned to this appointment can schedule the video consultation.",
-      });
+    // Only the doctor assigned to this appointment can create the session
+    if (!controllerDeps.canCreateSessionForDoctor(req.user, doctorId)) {
+      return sendError(res, 403, "Access Denied: Only the doctor assigned to this appointment can schedule the video consultation.");
     }
 
-    const isValidAppointment = await validateWithAppointmentService(appointmentId);
+    let isValidAppointment;
+    try {
+      isValidAppointment = await controllerDeps.validateWithAppointmentService(appointmentId);
+    } catch (error) {
+      // Appointment service is down right now
+      return sendError(res, 503, "Appointment service is unavailable. Please try again later.");
+    }
+
     if (!isValidAppointment) {
-      return res.status(503).json({
-        success: false,
-        message: "Unable to validate appointment. Appointment service may be unavailable.",
-      });
+      // Appointment exists but doesn't match the required type/status
+      return sendError(res, 400, "Appointment is invalid: must be an ONLINE appointment with PAID status.");
     }
 
-    const { roomName, joinUrl } = generateSecureRoomUrl();
+    const { roomName, joinUrl } = controllerDeps.generateSecureRoomUrl();
 
-    const session = await Session.create({
+    const session = await controllerDeps.createSessionRecord({
       appointmentId,
       patientId,
       doctorId,
@@ -56,11 +114,7 @@ export const createSession = async (req, res, next) => {
       status: "scheduled",
     });
 
-    return res.status(201).json({
-      success: true,
-      message: "Secure video session created successfully",
-      data: session,
-    });
+    return sendData(res, 201, session, { message: "Secure video session created successfully" });
   } catch (error) {
     return next(error);
   }
@@ -73,26 +127,30 @@ export const createSession = async (req, res, next) => {
  */
 export const getSessionById = async (req, res, next) => {
   try {
-    const session = await Session.findById(req.params.id);
-
-    if (!session) {
-      return res.status(404).json({
-        success: false,
-        message: "Session not found",
-      });
+    const result = await controllerDeps.getAccessibleSessionByIdOrError(req.params.id, req.user);
+    if (result.error) {
+      return sendServiceError(res, result);
     }
 
-    if (!canAccessSession(session, req.user)) {
-      return res.status(403).json({
-        success: false,
-        message: "Access denied. You are not a participant in this session.",
-      });
+    return sendData(res, 200, result.session);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+/**
+ * @desc    Get a specific session by appointment ID
+ * @route   GET /api/sessions/appointment/:appointmentId
+ * @access  Private (Patient/Doctor assigned to the session)
+ */
+export const getSessionByAppointmentId = async (req, res, next) => {
+  try {
+    const result = await controllerDeps.getAccessibleSessionByAppointmentIdOrError(req.params.appointmentId, req.user);
+    if (result.error) {
+      return sendServiceError(res, result);
     }
 
-    return res.status(200).json({
-      success: true,
-      data: session,
-    });
+    return sendData(res, 200, result.session);
   } catch (error) {
     return next(error);
   }
@@ -106,18 +164,22 @@ export const getSessionById = async (req, res, next) => {
 export const updateSessionStatus = async (req, res, next) => {
   try {
     const { status } = req.body;
-    const validStatuses = ["scheduled", "active", "ended", "cancelled"];
 
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: `Invalid status. Must be one of: ${validStatuses.join(", ")}`,
-      });
+    const statusValidation = controllerDeps.validateSessionStatusInput(status);
+    if (statusValidation.error) {
+      return sendServiceError(res, statusValidation);
     }
 
-    const session = await Session.findById(req.params.id);
-    if (!session) {
-      return res.status(404).json({ success: false, message: "Session not found" });
+    const result = await controllerDeps.getSessionByIdOrError(req.params.id);
+    if (result.error) {
+      return sendServiceError(res, result);
+    }
+
+    const session = result.session;
+
+    // Allow status updates only from the session's doctor or an admin
+    if (!controllerDeps.canUpdateSessionStatus(req.user, session)) {
+      return sendError(res, 403, "Only doctors assigned to this session or admins can update status");
     }
 
     session.status = status;
@@ -130,11 +192,7 @@ export const updateSessionStatus = async (req, res, next) => {
 
     await session.save();
 
-    return res.status(200).json({
-      success: true,
-      message: `Session status updated to ${status}`,
-      data: session,
-    });
+    return sendData(res, 200, session, { message: `Session status updated to ${status}` });
   } catch (error) {
     return next(error);
   }
@@ -148,15 +206,16 @@ export const updateSessionStatus = async (req, res, next) => {
 export const getSessionsByPatient = async (req, res, next) => {
   try {
     const requestedPatientId = req.params.patientId;
-    if (req.user.role !== "admin" && (req.user.role !== "patient" || req.user.id !== requestedPatientId)) {
-      return res.status(403).json({
-        success: false,
-        message: "Access denied. You can only view your own patient sessions.",
-      });
+    if (!controllerDeps.canViewPatientSessions(req.user, requestedPatientId)) {
+      return sendError(res, 403, "Access denied. You can only view your own patient sessions.");
     }
 
-    const sessions = await Session.find({ patientId: req.params.patientId }).sort({ scheduledAt: -1 });
-    return res.status(200).json({ success: true, count: sessions.length, data: sessions });
+    const result = await controllerDeps.getPaginatedSessions({
+      filter: { patientId: req.params.patientId },
+      query: req.query,
+    });
+
+    return res.status(200).json({ success: true, ...result });
   } catch (error) {
     return next(error);
   }
@@ -170,15 +229,38 @@ export const getSessionsByPatient = async (req, res, next) => {
 export const getSessionsByDoctor = async (req, res, next) => {
   try {
     const requestedDoctorId = req.params.doctorId;
-    if (req.user.role !== "admin" && (req.user.role !== "doctor" || req.user.id !== requestedDoctorId)) {
-      return res.status(403).json({
-        success: false,
-        message: "Access denied. You can only view your own doctor sessions.",
-      });
+    if (!controllerDeps.canViewDoctorSessions(req.user, requestedDoctorId)) {
+      return sendError(res, 403, "Access denied. You can only view your own doctor sessions.");
     }
 
-    const sessions = await Session.find({ doctorId: req.params.doctorId }).sort({ scheduledAt: -1 });
-    return res.status(200).json({ success: true, count: sessions.length, data: sessions });
+    const result = await controllerDeps.getPaginatedSessions({
+      filter: { doctorId: req.params.doctorId },
+      query: req.query,
+    });
+
+    return res.status(200).json({ success: true, ...result });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+/**
+ * @desc    Get all sessions (admin only)
+ * @route   GET /api/sessions
+ * @access  Private (Admin)
+ */
+export const getAllSessions = async (req, res, next) => {
+  try {
+    if (!controllerDeps.canViewAllSessions(req.user)) {
+      return sendError(res, 403, "Access denied. Admin privileges are required.");
+    }
+
+    const result = await controllerDeps.getPaginatedSessions({
+      filter: {},
+      query: req.query,
+    });
+
+    return res.status(200).json({ success: true, ...result });
   } catch (error) {
     return next(error);
   }
@@ -191,47 +273,24 @@ export const getSessionsByDoctor = async (req, res, next) => {
  */
 export const getSessionJoinDetails = async (req, res, next) => {
   try {
-    const session = await Session.findById(req.params.id);
-
-    if (!session) {
-      return res.status(404).json({
-        success: false,
-        message: "Session not found",
-      });
+    const result = await controllerDeps.getAccessibleSessionByIdOrError(req.params.id, req.user);
+    if (result.error) {
+      return sendServiceError(res, result);
     }
 
-    if (!canAccessSession(session, req.user)) {
-      return res.status(403).json({
-        success: false,
-        message: "Access denied. You are not a participant in this session.",
-      });
-    }
+    const session = result.session;
 
-    if (!checkJoinTokenRateLimit(req.user.id, session.id)) {
-      return res.status(429).json({
-        success: false,
-        message: "Too many join requests. Please try again shortly.",
-      });
-    }
-
-    const jaasEnabled = isJaasEnabled();
     const joinDetails = {
       roomName: session.roomName,
       joinUrl: session.joinUrl,
-      mode: jaasEnabled ? "jaas" : "public-jitsi",
-    };
-
-    if (jaasEnabled) {
-      joinDetails.token = mintJaasRoomToken({
+      mode: "jaas",
+      token: controllerDeps.mintJaasRoomToken({
         roomName: session.roomName,
         user: req.user,
-      });
-    }
+      }),
+    };
 
-    return res.status(200).json({
-      success: true,
-      data: joinDetails,
-    });
+    return sendData(res, 200, joinDetails);
   } catch (error) {
     return next(error);
   }

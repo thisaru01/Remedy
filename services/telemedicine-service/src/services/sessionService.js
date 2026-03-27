@@ -1,39 +1,168 @@
 import { v4 as uuidv4 } from "uuid";
+import mongoose from "mongoose";
 import {
   buildJaasJoinUrl,
   isJaasEnabled,
 } from "../config/jaas.js";
 import { fetchAppointmentById } from "../clients/appointmentClient.js";
+import {
+  countSessions,
+  findSessionByAppointmentId,
+  findSessionById,
+  listSessions,
+} from "../repositories/sessionRepository.js";
+import {
+  canAccessSession,
+} from "../policies/sessionPolicy.js";
 
-const joinTokenRateLimitWindowMs = 60 * 1000;
-const joinTokenMaxRequestsPerWindow = 10;
-const joinTokenRequestCounter = new Map();
-
-export const canAccessSession = (session, user) => {
-  return (
-    session.patientId === user.id ||
-    session.doctorId === user.id ||
-    user.role === "admin"
-  );
+const defaultDeps = {
+  countSessions,
+  findSessionByAppointmentId,
+  findSessionById,
+  listSessions,
+  canAccessSession,
 };
 
-export const checkJoinTokenRateLimit = (userId, sessionId) => {
-  const now = Date.now();
-  const key = `${userId}:${sessionId}`;
-  const bucket = joinTokenRequestCounter.get(key) || {
-    count: 0,
-    resetAt: now + joinTokenRateLimitWindowMs,
-  };
+const serviceDeps = { ...defaultDeps };
 
-  if (now > bucket.resetAt) {
-    bucket.count = 0;
-    bucket.resetAt = now + joinTokenRateLimitWindowMs;
+// Test hook: allows unit tests to replace data/policy dependencies without touching runtime behavior.
+export const __setSessionServiceDepsForTest = (overrides = {}) => {
+  Object.assign(serviceDeps, overrides);
+};
+
+export const __resetSessionServiceDepsForTest = () => {
+  Object.assign(serviceDeps, defaultDeps);
+};
+
+export const validateCreateSessionPayload = ({ appointmentId, patientId, doctorId, scheduledAt }) => {
+  if (!appointmentId || !patientId || !doctorId || !scheduledAt) {
+    return {
+      error: {
+        status: 400,
+        message: "Missing required fields: appointmentId, patientId, doctorId, scheduledAt",
+      },
+    };
   }
 
-  bucket.count += 1;
-  joinTokenRequestCounter.set(key, bucket);
+  return { ok: true };
+};
 
-  return bucket.count <= joinTokenMaxRequestsPerWindow;
+export const validateSessionStatusInput = (status) => {
+  const validStatuses = ["scheduled", "active", "ended", "cancelled"];
+  if (!validStatuses.includes(status)) {
+    return {
+      error: {
+        status: 400,
+        message: `Invalid status. Must be one of: ${validStatuses.join(", ")}`,
+      },
+    };
+  }
+
+  return { ok: true };
+};
+
+export const getSessionByIdOrError = async (sessionId) => {
+  if (!mongoose.isValidObjectId(sessionId)) {
+    return {
+      error: {
+        status: 400,
+        message: "Invalid session ID format",
+      },
+    };
+  }
+
+  const session = await serviceDeps.findSessionById(sessionId);
+  if (!session) {
+    return {
+      error: {
+        status: 404,
+        message: "Session not found",
+      },
+    };
+  }
+
+  return { session };
+};
+
+export const getAccessibleSessionByIdOrError = async (sessionId, user) => {
+  const result = await getSessionByIdOrError(sessionId);
+  if (result.error) {
+    return result;
+  }
+
+  if (!serviceDeps.canAccessSession(result.session, user)) {
+    return {
+      error: {
+        status: 403,
+        message: "Access denied. You are not a participant in this session.",
+      },
+    };
+  }
+
+  return result;
+};
+
+export const getAccessibleSessionByAppointmentIdOrError = async (appointmentId, user) => {
+  const normalizedAppointmentId = String(appointmentId || "").trim();
+  if (!normalizedAppointmentId) {
+    return {
+      error: {
+        status: 400,
+        message: "Appointment ID is required",
+      },
+    };
+  }
+
+  const session = await serviceDeps.findSessionByAppointmentId(normalizedAppointmentId);
+  if (!session) {
+    return {
+      error: {
+        status: 404,
+        message: "Session not found for this appointment",
+      },
+    };
+  }
+
+  if (!serviceDeps.canAccessSession(session, user)) {
+    return {
+      error: {
+        status: 403,
+        message: "Access denied. You are not a participant in this session.",
+      },
+    };
+  }
+
+  return { session };
+};
+
+export const parsePaginationQuery = (query) => {
+  const rawPage = Number(query.page);
+  const rawLimit = Number(query.limit);
+
+  const page = Number.isFinite(rawPage) && rawPage > 0 ? Math.floor(rawPage) : 1;
+  const limitBase = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.floor(rawLimit) : 10;
+  const limit = Math.min(limitBase, 50);
+  const skip = (page - 1) * limit;
+
+  return { page, limit, skip };
+};
+
+export const getPaginatedSessions = async ({ filter, query, sort = { scheduledAt: -1 } }) => {
+  const { page, limit, skip } = parsePaginationQuery(query);
+
+  const [sessions, total] = await Promise.all([
+    serviceDeps.listSessions({ filter, sort, skip, limit }),
+    serviceDeps.countSessions(filter),
+  ]);
+
+  return {
+    page,
+    limit,
+    total,
+    totalPages: Math.ceil(total / limit),
+    count: sessions.length,
+    data: sessions,
+  };
 };
 
 export const validateWithAppointmentService = async (appointmentId) => {
@@ -60,7 +189,8 @@ export const validateWithAppointmentService = async (appointmentId) => {
     console.error(
       `Appointment validation failed for ${appointmentId}: ${error.message}`,
     );
-    return false;
+    // Rethrow so callers can handle service outages separately
+    throw error;
   }
 };
 

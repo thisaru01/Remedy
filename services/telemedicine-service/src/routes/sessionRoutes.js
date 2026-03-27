@@ -1,7 +1,9 @@
 import express from "express";
 import {
+  getAllSessions,
   createSession,
   getSessionById,
+  getSessionByAppointmentId,
   getSessionJoinDetails,
   updateSessionStatus,
   getSessionsByPatient,
@@ -17,9 +19,13 @@ router.use(internalAuthMiddleware);
 // Create a session
 router.post("/", createSession);
 
+// Global session list (admin)
+router.get("/", getAllSessions);
+
 // List sessions for a specific user
 router.get("/patient/:patientId", getSessionsByPatient);
 router.get("/doctor/:doctorId", getSessionsByDoctor);
+router.get("/appointment/:appointmentId", getSessionByAppointmentId);
 
 // Get secure join details for a session
 router.get("/:id/join", getSessionJoinDetails);

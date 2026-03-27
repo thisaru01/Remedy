@@ -57,4 +57,9 @@ const sessionSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+// Indexes used by the most common session list/look-up queries
+sessionSchema.index({ patientId: 1, scheduledAt: -1 });
+sessionSchema.index({ doctorId: 1, scheduledAt: -1 });
+sessionSchema.index({ appointmentId: 1 }, { unique: true });
+
 export default mongoose.model("Session", sessionSchema);

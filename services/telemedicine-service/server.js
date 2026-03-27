@@ -1,16 +1,15 @@
 import dotenv from "dotenv";
-import app from "./src/app.js";
 import connectDB from "./src/config/db.js";
-import { isJaasEnabled, validateJaasConfig } from "./src/config/jaas.js";
+import { validateJaasConfig } from "./src/config/jaas.js";
 
 // Load environment variables (.env file)
 dotenv.config();
 
-// Validate JaaS setup only when JaaS mode is in use.
-if (isJaasEnabled()) {
-  validateJaasConfig();
-  console.log("JaaS configuration validated");
-}
+const { default: app } = await import("./src/app.js");
+
+// Telemedicine runs in JaaS-only mode; fail fast if configuration is incomplete.
+validateJaasConfig();
+console.log("JaaS-only configuration validated");
 
 // Connect to MongoDB Database
 connectDB();
