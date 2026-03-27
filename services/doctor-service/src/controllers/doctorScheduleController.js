@@ -4,6 +4,7 @@ import {
   getSchedulesByDoctorId,
   getSchedulesForDoctor,
   updateDayAvailabilityForDoctor,
+  updateDoctorSchedule,
 } from "../services/doctorScheduleService.js";
 import {
   ensureDoctorAccess,
@@ -11,6 +12,7 @@ import {
   validateCreateSchedulePayload,
   validateDayAvailabilityPayload,
   validateDoctorIdParam,
+  validateUpdateSchedulePayload,
 } from "../utils/validation.js";
 
 export const createOwnDoctorSchedule = async (req, res, next) => {
@@ -125,6 +127,55 @@ export const getScheduleByDoctorId = async (req, res, next) => {
       schedules,
     });
   } catch (error) {
+    return next(error);
+  }
+};
+
+export const updateOwnDoctorSchedule = async (req, res, next) => {
+  try {
+    const context = getCurrentDoctorContext(req);
+    if (!ensureDoctorAccess(res, context, "update schedules")) return;
+
+    const { scheduleId } = req.params;
+    const { day, startTime, isAvailable } = req.body;
+
+    if (!scheduleId) {
+      return res.status(400).json({
+        success: false,
+        message: "scheduleId is required",
+      });
+    }
+
+    if (!validateUpdateSchedulePayload(res, req.body)) return;
+
+    const schedule = await updateDoctorSchedule({
+      scheduleId,
+      doctorUserId: context.userId,
+      day,
+      startTime,
+      isAvailable,
+    });
+
+    if (!schedule) {
+      return res.status(404).json({
+        success: false,
+        message: "Schedule not found or does not belong to this doctor",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Doctor schedule updated successfully",
+      schedule,
+    });
+  } catch (error) {
+    if (error?.name === "ValidationError") {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
     return next(error);
   }
 };

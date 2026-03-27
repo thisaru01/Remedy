@@ -90,3 +90,41 @@ export const validateDoctorIdParam = (res, doctorId) => {
 
   return true;
 };
+
+export const validateUpdateSchedulePayload = (res, body) => {
+  const { day, startTime, isAvailable } = body;
+
+  if (!day && !startTime && isAvailable === undefined) {
+    res.status(400).json({
+      success: false,
+      message: "At least one field (day, startTime, or isAvailable) is required to update",
+    });
+    return false;
+  }
+
+  if (day && !DOCTOR_SCHEDULE_DAYS.includes(day)) {
+    res.status(400).json({
+      success: false,
+      message: `day must be one of: ${DOCTOR_SCHEDULE_DAYS.join(", ")}`,
+    });
+    return false;
+  }
+
+  if (isAvailable !== undefined && typeof isAvailable !== "boolean") {
+    res.status(400).json({
+      success: false,
+      message: "isAvailable must be true or false",
+    });
+    return false;
+  }
+
+  if (body.slotCount !== undefined) {
+    res.status(400).json({
+      success: false,
+      message: "slotCount is fixed to 6 and cannot be changed",
+    });
+    return false;
+  }
+
+  return true;
+};

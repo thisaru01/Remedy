@@ -4,6 +4,7 @@ import {
   createOwnDoctorSchedule,
   getOwnDoctorSchedules,
   updateOwnDoctorDayAvailability,
+  updateOwnDoctorSchedule,
   getScheduleByDoctorId,
   getAllDoctorSchedules,
 } from "../controllers/doctorScheduleController.js";
@@ -12,6 +13,7 @@ const router = express.Router();
 
 router.post("/me", internalAuthMiddleware, createOwnDoctorSchedule);
 router.get("/me", internalAuthMiddleware, getOwnDoctorSchedules);
+router.put("/me/:scheduleId", internalAuthMiddleware, updateOwnDoctorSchedule);
 router.get("/all", getAllDoctorSchedules);
 router.put(
   "/me/day/:day/availability",

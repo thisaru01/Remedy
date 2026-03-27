@@ -49,3 +49,23 @@ export const getAllSchedules = async () => {
     startTime: 1,
   });
 };
+
+export const updateDoctorSchedule = async ({
+  scheduleId,
+  doctorUserId,
+  day,
+  startTime,
+  isAvailable,
+}) => {
+  return DoctorSchedule.findOneAndUpdate(
+    { _id: scheduleId, doctorUserId },
+    {
+      $set: {
+        ...(day !== undefined ? { day } : {}),
+        ...(startTime !== undefined ? { startTime } : {}),
+        ...(isAvailable !== undefined ? { isAvailable } : {}),
+      },
+    },
+    { new: true, runValidators: true },
+  );
+};
