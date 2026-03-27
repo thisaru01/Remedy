@@ -1,4 +1,5 @@
 import PatientProfile from "../models/patientProfileModel.js";
+import mongoose from "mongoose";
 
 export const createPatientProfile = async (req, res, next) => {
   try {
@@ -114,6 +115,41 @@ export const updateMyPatientProfile = async (req, res, next) => {
       { returnDocument: "after", runValidators: true },
     );
 
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        message: "Patient profile not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      profile,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const getPatientProfileByUserId = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "id is required",
+      });
+    }
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid id",
+      });
+    }
+
+    const profile = await PatientProfile.findOne({ userId: id });
     if (!profile) {
       return res.status(404).json({
         success: false,
