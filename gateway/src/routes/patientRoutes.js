@@ -13,7 +13,7 @@ export const createPatientRoutes = ({ protect, proxyTo, services }) => {
     authorizeRoles("patient"),
     proxyTo(services.patient, {
       addUserContext: true,
-      basePath: "/api/patient-profiles",
+      basePath: "/api/patient-profiles/me",
     }),
   );
 
