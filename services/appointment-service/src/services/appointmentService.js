@@ -64,4 +64,8 @@ export const createAppointment = async (data) => {
   return appointment;
 };
 
-export default { createAppointment };
+export const getAppointments = async (filter = {}) => {
+  return Appointment.find(filter).sort({ createdAt: -1 });
+};
+
+export default { createAppointment, getAppointments };
