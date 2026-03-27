@@ -153,6 +153,40 @@ const doctorProfileSchema = new mongoose.Schema(
       type: [workingHospitalSchema],
       default: [],
     },
+    verification: {
+      status: {
+        type: String,
+        enum: ["not_submitted", "submitted", "approved", "rejected"],
+        default: "not_submitted",
+      },
+      idType: {
+        type: String,
+        trim: true,
+      },
+      idNumber: {
+        type: String,
+        trim: true,
+      },
+      medicalLicenseNumber: {
+        type: String,
+        trim: true,
+      },
+      medicalCouncil: {
+        type: String,
+        trim: true,
+      },
+      idDocumentUrl: {
+        type: String,
+        trim: true,
+      },
+      licenseDocumentUrl: {
+        type: String,
+        trim: true,
+      },
+      submittedAt: {
+        type: Date,
+      },
+    },
   },
   { timestamps: true },
 );

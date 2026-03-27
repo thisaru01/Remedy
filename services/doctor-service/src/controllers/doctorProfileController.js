@@ -152,3 +152,71 @@ export const updateOwnDoctorProfile = async (req, res, next) => {
     return next(error);
   }
 };
+
+export const submitOwnDoctorVerification = async (req, res, next) => {
+  try {
+    const { userId, role } = getCurrentDoctorContext(req);
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "Authenticated user id is required",
+      });
+    }
+
+    if (role !== "doctor") {
+      return res.status(403).json({
+        success: false,
+        message: "Only doctors can submit verification",
+      });
+    }
+
+    const {
+      idType,
+      idNumber,
+      medicalLicenseNumber,
+      medicalCouncil,
+      idDocumentUrl,
+      licenseDocumentUrl,
+    } = req.body;
+
+    if (!idType || !idNumber || !medicalLicenseNumber) {
+      return res.status(400).json({
+        success: false,
+        message: "idType, idNumber and medicalLicenseNumber are required",
+      });
+    }
+
+    const profile = await DoctorProfile.findOneAndUpdate(
+      { userId },
+      {
+        $setOnInsert: { userId },
+        $set: {
+          verification: {
+            status: "submitted",
+            idType,
+            idNumber,
+            medicalLicenseNumber,
+            medicalCouncil,
+            idDocumentUrl,
+            licenseDocumentUrl,
+            submittedAt: new Date(),
+          },
+        },
+      },
+      {
+        upsert: true,
+        new: true,
+        runValidators: true,
+      },
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Verification submitted successfully",
+      profile,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
