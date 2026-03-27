@@ -179,3 +179,35 @@ export const updateOwnDoctorDayAvailability = async (req, res, next) => {
     return next(error);
   }
 };
+
+export const getScheduleByDoctorId = async (req, res, next) => {
+  try {
+    const { doctorId } = req.params;
+
+    if (!doctorId) {
+      return res.status(400).json({
+        success: false,
+        message: "doctorId is required",
+      });
+    }
+
+    const schedules = await DoctorSchedule.find({ doctorUserId: doctorId }).sort({
+      day: 1,
+      startTime: 1,
+    });
+
+    if (schedules.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No schedules found for this doctor",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      schedules,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};

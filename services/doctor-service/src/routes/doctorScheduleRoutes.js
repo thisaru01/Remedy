@@ -4,6 +4,7 @@ import {
   createOwnDoctorSchedule,
   getOwnDoctorSchedules,
   updateOwnDoctorDayAvailability,
+  getScheduleByDoctorId,
 } from "../controllers/doctorScheduleController.js";
 
 const router = express.Router();
@@ -15,5 +16,7 @@ router.put(
   internalAuthMiddleware,
   updateOwnDoctorDayAvailability,
 );
+// Public: fetch schedules by doctorId (no internal token required)
+router.get("/:doctorId", getScheduleByDoctorId);
 
 export default router;
