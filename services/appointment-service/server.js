@@ -4,6 +4,7 @@ import cors from "cors";
 import morgan from "morgan";
 import connectDB from "./src/config/db.js";
 import appointmentRoutes from "./src/routes/appointmentRoutes.js";
+import internalAuthMiddleware from "./src/middleware/internalAuthMiddleware.js";
 
 dotenv.config();
 
@@ -23,8 +24,8 @@ app.get("/api/health", (req, res) => {
   res.status(200).json({ message: "API is running 🚀" });
 });
 
-// Appointment routes
-app.use("/api/appointments", appointmentRoutes);
+// Appointment routes (gateway-only)
+app.use("/api/appointments", internalAuthMiddleware, appointmentRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

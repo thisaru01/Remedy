@@ -23,6 +23,11 @@ export const createAppointment = async (data) => {
     err.statusCode = 400;
     throw err;
   }
+  if (!scheduleId) {
+    const err = new Error("scheduleId is required");
+    err.statusCode = 400;
+    throw err;
+  }
   // appointmentNumber may be provided; if not, generate an atomic incremental value
   let finalAppointmentNumber = appointmentNumber;
 
@@ -48,7 +53,7 @@ export const createAppointment = async (data) => {
   const appointment = await Appointment.create({
     patientId,
     doctorId,
-    scheduleId: scheduleId || undefined,
+    scheduleId,
     appointmentNumber: finalAppointmentNumber,
     status: status || undefined,
     // let model default paymentStatus when not provided
