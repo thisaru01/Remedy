@@ -125,6 +125,22 @@ export const updateOwnDoctorProfile = async (req, res, next) => {
       });
     }
 
+    const existingProfile = await DoctorProfile.findOne({ userId });
+    if (!existingProfile) {
+      return res.status(404).json({
+        success: false,
+        message: "Doctor profile not found",
+      });
+    }
+
+    if (existingProfile.verification?.status === "not_submitted") {
+      return res.status(403).json({
+        success: false,
+        message:
+          "Please submit verification proof before updating profile information",
+      });
+    }
+
     const set = {};
     for (const field of doctorUpdatableFields) {
       if (req.body[field] !== undefined) {
@@ -142,11 +158,9 @@ export const updateOwnDoctorProfile = async (req, res, next) => {
     const profile = await DoctorProfile.findOneAndUpdate(
       { userId },
       {
-        $setOnInsert: { userId },
         $set: set,
       },
       {
-        upsert: true,
         new: true,
         runValidators: true,
       },
