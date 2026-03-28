@@ -5,6 +5,7 @@ import {
 	getAppointmentById,
 	acceptAppointment,
 	completeAppointment,
+	deleteAppointment,
 	rejectAppointment,
 	cancelAppointment,
 	rescheduleAppointment,
@@ -26,6 +27,9 @@ router.patch("/:id/accept", acceptAppointment);
 
 // PATCH /api/appointments/:id/complete
 router.patch("/:id/complete", completeAppointment);
+
+// DELETE /api/appointments/:id
+router.delete("/:id", deleteAppointment);
 
 // PATCH /api/appointments/:id/reject
 router.patch("/:id/reject", rejectAppointment);

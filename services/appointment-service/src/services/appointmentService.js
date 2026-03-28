@@ -309,6 +309,40 @@ export const completeAppointment = async (id, requester) => {
   return appointment;
 };
 
+export const deleteAppointment = async (id, requester) => {
+  if (!requester || requester.role !== "patient") {
+    const err = new Error("Only patients can delete appointments");
+    err.statusCode = 403;
+    throw err;
+  }
+
+  const appointment = await Appointment.findById(id);
+  if (!appointment) {
+    const err = new Error("Appointment not found");
+    err.statusCode = 404;
+    throw err;
+  }
+
+  const userId = requester.id;
+  const isPatientOwner = appointment.patientId && appointment.patientId.toString() === userId;
+  if (!isPatientOwner) {
+    const err = new Error("You can only delete your own appointments");
+    err.statusCode = 403;
+    throw err;
+  }
+
+  const allowed = ["pending", "rejected", "cancelled"];
+  if (!allowed.includes(appointment.status)) {
+    const err = new Error("Only appointments in pending, rejected, or cancelled status can be deleted");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  // delete and return deleted doc
+  const deleted = await Appointment.findByIdAndDelete(id);
+  return deleted;
+};
+
 export default {
   createAppointment,
   getAppointments,
@@ -318,4 +352,5 @@ export default {
   cancelAppointment,
   rescheduleAppointment,
   completeAppointment,
+  deleteAppointment,
 };

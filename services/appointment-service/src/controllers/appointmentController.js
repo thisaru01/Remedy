@@ -154,6 +154,22 @@ export const completeAppointment = async (req, res, next) => {
     return next(error);
   }
 };
+export const deleteAppointment = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const appointment = await appointmentService.deleteAppointment(id, req.user);
+
+    return res.status(200).json({ success: true, appointment });
+  } catch (error) {
+    if (error.statusCode) {
+      return res
+        .status(error.statusCode)
+        .json({ success: false, message: error.message });
+    }
+    return next(error);
+  }
+};
 
 export default { createAppointment };
 
