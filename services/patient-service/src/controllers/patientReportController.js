@@ -1,6 +1,14 @@
 import PatientReport from "../models/patientReportModel.js";
 
 export const uploadPatientReport = async (req, res) => {
+  const role = req.user?.role;
+  if (role !== "patient") {
+    return res.status(403).json({
+      success: false,
+      message: "Access denied",
+    });
+  }
+
   const userId = req.user?.id;
 
   if (!userId) {
@@ -49,6 +57,14 @@ export const uploadPatientReport = async (req, res) => {
 };
 
 export const getMyPatientReports = async (req, res) => {
+  const role = req.user?.role;
+  if (role !== "patient") {
+    return res.status(403).json({
+      success: false,
+      message: "Access denied",
+    });
+  }
+
   const userId = req.user?.id;
 
   if (!userId) {

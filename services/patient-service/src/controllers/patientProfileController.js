@@ -86,6 +86,14 @@ export const updatePatientProfile = async (req, res, next) => {
 
 export const updateMyPatientProfile = async (req, res, next) => {
   try {
+    const role = req.user?.role;
+    if (role !== "patient") {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      });
+    }
+
     const userId = req.user?.id;
     const { dateOfBirth, gender, phone, address } = req.body ?? {};
 
@@ -133,6 +141,14 @@ export const updateMyPatientProfile = async (req, res, next) => {
 
 export const getMyPatientProfile = async (req, res, next) => {
   try {
+    const role = req.user?.role;
+    if (role !== "patient") {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      });
+    }
+
     const userId = req.user?.id;
 
     if (!userId) {
@@ -168,6 +184,14 @@ export const getMyPatientProfile = async (req, res, next) => {
 
 export const getPatientProfileByUserId = async (req, res, next) => {
   try {
+    const role = req.user?.role;
+    if (!role || !["doctor", "admin"].includes(role)) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      });
+    }
+
     const { id } = req.params;
 
     if (!id) {
