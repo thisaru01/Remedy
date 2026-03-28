@@ -53,37 +53,41 @@ export const getAppointmentById = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    const appointment = await appointmentService.getAppointmentById(id);
+    const appointment = await appointmentService.getAppointmentById(id, req.user);
 
-    if (!appointment) {
-      return res.status(404).json({
-        success: false,
-        message: "Appointment not found",
-      });
+    return res.status(200).json({ success: true, appointment });
+  } catch (error) {
+    if (error.statusCode) {
+      return res
+        .status(error.statusCode)
+        .json({ success: false, message: error.message });
     }
+    return next(error);
+  }
+};
 
-    if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: "Not authorized",
-      });
+export const acceptAppointment = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const appointment = await appointmentService.acceptAppointment(id, req.user);
+
+    return res.status(200).json({ success: true, appointment });
+  } catch (error) {
+    if (error.statusCode) {
+      return res
+        .status(error.statusCode)
+        .json({ success: false, message: error.message });
     }
+    return next(error);
+  }
+};
 
-    const userId = req.user.id;
-    const role = req.user.role;
+export const rejectAppointment = async (req, res, next) => {
+  try {
+    const { id } = req.params;
 
-    const isPatientOwner =
-      role === "patient" && appointment.patientId?.toString() === userId;
-    const isDoctorOwner =
-      role === "doctor" && appointment.doctorId?.toString() === userId;
-    const isAdmin = role === "admin";
-
-    if (!isPatientOwner && !isDoctorOwner && !isAdmin) {
-      return res.status(403).json({
-        success: false,
-        message: "You are not allowed to view this appointment",
-      });
-    }
+    const appointment = await appointmentService.rejectAppointment(id, req.user);
 
     return res.status(200).json({ success: true, appointment });
   } catch (error) {

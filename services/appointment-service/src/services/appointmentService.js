@@ -68,8 +68,125 @@ export const getAppointments = async (filter = {}) => {
   return Appointment.find(filter).sort({ createdAt: -1 });
 };
 
-export const getAppointmentById = async (id) => {
-  return Appointment.findById(id);
+export const getAppointmentById = async (id, requester) => {
+  const appointment = await Appointment.findById(id);
+  if (!appointment) {
+    const err = new Error("Appointment not found");
+    err.statusCode = 404;
+    throw err;
+  }
+
+  if (!requester) {
+    const err = new Error("Not authorized");
+    err.statusCode = 401;
+    throw err;
+  }
+
+  const { id: userId, role } = requester;
+
+  const isPatientOwner =
+    role === "patient" && appointment.patientId?.toString() === userId;
+  const isDoctorOwner =
+    role === "doctor" && appointment.doctorId?.toString() === userId;
+  const isAdmin = role === "admin";
+
+  if (!isPatientOwner && !isDoctorOwner && !isAdmin) {
+    const err = new Error("You are not allowed to view this appointment");
+    err.statusCode = 403;
+    throw err;
+  }
+
+  return appointment;
 };
 
-export default { createAppointment, getAppointments, getAppointmentById };
+export const acceptAppointment = async (id, requester) => {
+  if (!requester || requester.role !== "doctor") {
+    const err = new Error("Only doctors can accept appointments");
+    err.statusCode = 403;
+    throw err;
+  }
+
+  const appointment = await Appointment.findById(id);
+  if (!appointment) {
+    const err = new Error("Appointment not found");
+    err.statusCode = 404;
+    throw err;
+  }
+
+  const userId = requester.id;
+  const isDoctorOwner =
+    appointment.doctorId && appointment.doctorId.toString() === userId;
+
+  if (!isDoctorOwner) {
+    const err = new Error("You can only accept your own appointments");
+    err.statusCode = 403;
+    throw err;
+  }
+
+  if (appointment.status === "accepted") {
+    const err = new Error("Appointment is already accepted");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  if (appointment.status === "rejected") {
+    const err = new Error("Rejected appointments cannot be accepted again");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  appointment.status = "accepted";
+  await appointment.save();
+
+  return appointment;
+};
+
+export const rejectAppointment = async (id, requester) => {
+  if (!requester || requester.role !== "doctor") {
+    const err = new Error("Only doctors can reject appointments");
+    err.statusCode = 403;
+    throw err;
+  }
+
+  const appointment = await Appointment.findById(id);
+  if (!appointment) {
+    const err = new Error("Appointment not found");
+    err.statusCode = 404;
+    throw err;
+  }
+
+  const userId = requester.id;
+  const isDoctorOwner =
+    appointment.doctorId && appointment.doctorId.toString() === userId;
+
+  if (!isDoctorOwner) {
+    const err = new Error("You can only reject your own appointments");
+    err.statusCode = 403;
+    throw err;
+  }
+
+  if (appointment.status === "rejected") {
+    const err = new Error("Appointment is already rejected");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  if (appointment.status === "accepted") {
+    const err = new Error("Accepted appointments cannot be rejected again");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  appointment.status = "rejected";
+  await appointment.save();
+
+  return appointment;
+};
+
+export default {
+  createAppointment,
+  getAppointments,
+  getAppointmentById,
+  acceptAppointment,
+  rejectAppointment,
+};
