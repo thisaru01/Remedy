@@ -5,7 +5,9 @@ import {
   getOwnDoctorSchedules,
   updateOwnDoctorDayAvailability,
   updateOwnDoctorSchedule,
+  getScheduleById,
   getScheduleByDoctorId,
+  getSchedulesByDoctorIdAndAvailability,
   getAllDoctorSchedules,
 } from "../controllers/doctorScheduleController.js";
 
@@ -15,11 +17,13 @@ router.post("/me", internalAuthMiddleware, createOwnDoctorSchedule);
 router.get("/me", internalAuthMiddleware, getOwnDoctorSchedules);
 router.put("/me/:scheduleId", internalAuthMiddleware, updateOwnDoctorSchedule);
 router.get("/all", getAllDoctorSchedules);
+router.get("/filter", getSchedulesByDoctorIdAndAvailability);
 router.put(
-  "/me/day/:day/availability",
+  "/me/:scheduleId/availability",
   internalAuthMiddleware,
   updateOwnDoctorDayAvailability,
 );
+router.get("/schedule/:scheduleId", getScheduleById);
 // Public: fetch schedules by doctorId (no internal token required)
 router.get("/:doctorId", getScheduleByDoctorId);
 

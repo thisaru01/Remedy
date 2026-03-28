@@ -87,10 +87,10 @@ export const updateOwnDoctorProfile = async ({ userId, role, updates }) => {
     throw createServiceError(404, "Doctor profile not found");
   }
 
-  if (existingProfile.verification?.status === "not_submitted") {
+  if (existingProfile.verification?.status !== "approved") {
     throw createServiceError(
       403,
-      "Please submit verification proof before updating profile information",
+      "Profile updates are allowed only after admin approval of doctor verification",
     );
   }
 
@@ -130,6 +130,31 @@ export const submitOwnDoctorVerification = async ({
     throw createServiceError(
       400,
       "medicalLicenseNumber and licenseDocumentUrl are required",
+    );
+  }
+
+  const existingProfile = await DoctorProfile.findOne({ userId });
+  const verificationStatus =
+    existingProfile?.verification?.status ?? "not_submitted";
+
+  if (verificationStatus === "submitted") {
+    throw createServiceError(
+      403,
+      "Verification is already submitted and pending admin review",
+    );
+  }
+
+  if (verificationStatus === "approved") {
+    throw createServiceError(
+      403,
+      "Verification is already approved and cannot be resubmitted",
+    );
+  }
+
+  if (!["not_submitted", "rejected"].includes(verificationStatus)) {
+    throw createServiceError(
+      403,
+      "Verification details cannot be submitted in the current status",
     );
   }
 

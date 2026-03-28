@@ -1,24 +1,54 @@
 import {
   createDoctorSchedule,
   getAllSchedules,
+  getScheduleByScheduleId,
   getSchedulesByDoctorId,
+  getSchedulesByDoctorIdAndAvailability as getSchedulesByDoctorIdAndAvailabilityService,
   getSchedulesForDoctor,
-  updateDayAvailabilityForDoctor,
+  updateScheduleAvailabilityForDoctor,
   updateDoctorSchedule,
 } from "../services/doctorScheduleService.js";
+import DoctorProfile from "../models/doctorProfileModel.js";
 import {
   ensureDoctorAccess,
   getCurrentDoctorContext,
   validateCreateSchedulePayload,
-  validateDayAvailabilityPayload,
   validateDoctorIdParam,
+  validateScheduleIdParam,
   validateUpdateSchedulePayload,
 } from "../utils/validation.js";
+
+const ensureDoctorVerificationApproved = async (res, userId) => {
+  const profile = await DoctorProfile.findOne(
+    { userId },
+    { verification: 1 },
+  ).lean();
+
+  if (!profile) {
+    res.status(404).json({
+      success: false,
+      message: "Doctor profile not found",
+    });
+    return false;
+  }
+
+  if (profile.verification?.status !== "approved") {
+    res.status(403).json({
+      success: false,
+      message:
+        "Only admin-approved doctors can create or update schedules",
+    });
+    return false;
+  }
+
+  return true;
+};
 
 export const createOwnDoctorSchedule = async (req, res, next) => {
   try {
     const context = getCurrentDoctorContext(req);
     if (!ensureDoctorAccess(res, context, "create schedules")) return;
+    if (!(await ensureDoctorVerificationApproved(res, context.userId))) return;
 
     const { day, startTime, isAvailable } = req.body;
     if (!validateCreateSchedulePayload(res, req.body)) return;
@@ -76,31 +106,36 @@ export const updateOwnDoctorDayAvailability = async (req, res, next) => {
     if (!ensureDoctorAccess(res, context, "update schedule availability")) {
       return;
     }
+    if (!(await ensureDoctorVerificationApproved(res, context.userId))) return;
 
-    const { day } = req.params;
+    const { scheduleId } = req.params;
     const { isAvailable } = req.body;
 
-    if (!validateDayAvailabilityPayload(res, day, isAvailable)) return;
+    if (!validateScheduleIdParam(res, scheduleId)) return;
+    if (typeof isAvailable !== "boolean") {
+      return res.status(400).json({
+        success: false,
+        message: "isAvailable is required and must be true or false",
+      });
+    }
 
-    const result = await updateDayAvailabilityForDoctor({
+    const schedule = await updateScheduleAvailabilityForDoctor({
       doctorUserId: context.userId,
-      day,
+      scheduleId,
       isAvailable,
     });
 
-    if (result.matchedCount === 0) {
+    if (!schedule) {
       return res.status(404).json({
         success: false,
-        message: "No schedules found for this day",
+        message: "Schedule not found or does not belong to this doctor",
       });
     }
 
     return res.status(200).json({
       success: true,
-      message: "Doctor day availability updated successfully",
-      day,
-      isAvailable,
-      updatedCount: result.modifiedCount,
+      message: "Doctor schedule availability updated successfully",
+      schedule,
     });
   } catch (error) {
     return next(error);
@@ -131,20 +166,86 @@ export const getScheduleByDoctorId = async (req, res, next) => {
   }
 };
 
+export const getSchedulesByDoctorIdAndAvailability = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    const { doctorId, isAvailable } = req.query;
+
+    if (!validateDoctorIdParam(res, doctorId)) return;
+
+    if (isAvailable === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: "isAvailable query param is required (true or false)",
+      });
+    }
+
+    if (isAvailable !== "true" && isAvailable !== "false") {
+      return res.status(400).json({
+        success: false,
+        message: "isAvailable must be 'true' or 'false'",
+      });
+    }
+
+    const schedules = await getSchedulesByDoctorIdAndAvailabilityService({
+      doctorId,
+      isAvailable: isAvailable === "true",
+    });
+
+    if (schedules.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No schedules found for this doctor with requested availability",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      count: schedules.length,
+      schedules,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const getScheduleById = async (req, res, next) => {
+  try {
+    const { scheduleId } = req.params;
+
+    if (!validateScheduleIdParam(res, scheduleId)) return;
+
+    const schedule = await getScheduleByScheduleId(scheduleId);
+
+    if (!schedule) {
+      return res.status(404).json({
+        success: false,
+        message: "Schedule not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      schedule,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 export const updateOwnDoctorSchedule = async (req, res, next) => {
   try {
     const context = getCurrentDoctorContext(req);
     if (!ensureDoctorAccess(res, context, "update schedules")) return;
+    if (!(await ensureDoctorVerificationApproved(res, context.userId))) return;
 
     const { scheduleId } = req.params;
     const { day, startTime, isAvailable } = req.body;
 
-    if (!scheduleId) {
-      return res.status(400).json({
-        success: false,
-        message: "scheduleId is required",
-      });
-    }
+    if (!validateScheduleIdParam(res, scheduleId)) return;
 
     if (!validateUpdateSchedulePayload(res, req.body)) return;
 
