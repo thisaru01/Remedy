@@ -4,6 +4,7 @@ import cors from "cors";
 import morgan from "morgan";
 import connectDB from "./src/config/db.js";
 import doctorProfileRoutes from "./src/routes/doctorProfileRoutes.js";
+import doctorScheduleRoutes from "./src/routes/doctorScheduleRoutes.js";
 
 dotenv.config();
 
@@ -19,6 +20,7 @@ connectDB();
 
 // Routes
 app.use("/api/doctor-profiles", doctorProfileRoutes);
+app.use("/api/doctor-schedules", doctorScheduleRoutes);
 
 // Test route
 app.get("/api/health", (req, res) => {
