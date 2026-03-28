@@ -6,6 +6,7 @@ import {
   updateDayAvailabilityForDoctor,
   updateDoctorSchedule,
 } from "../services/doctorScheduleService.js";
+import DoctorProfile from "../models/doctorProfileModel.js";
 import {
   ensureDoctorAccess,
   getCurrentDoctorContext,
@@ -15,10 +16,37 @@ import {
   validateUpdateSchedulePayload,
 } from "../utils/validation.js";
 
+const ensureDoctorVerificationApproved = async (res, userId) => {
+  const profile = await DoctorProfile.findOne(
+    { userId },
+    { verification: 1 },
+  ).lean();
+
+  if (!profile) {
+    res.status(404).json({
+      success: false,
+      message: "Doctor profile not found",
+    });
+    return false;
+  }
+
+  if (profile.verification?.status !== "approved") {
+    res.status(403).json({
+      success: false,
+      message:
+        "Only admin-approved doctors can create or update schedules",
+    });
+    return false;
+  }
+
+  return true;
+};
+
 export const createOwnDoctorSchedule = async (req, res, next) => {
   try {
     const context = getCurrentDoctorContext(req);
     if (!ensureDoctorAccess(res, context, "create schedules")) return;
+    if (!(await ensureDoctorVerificationApproved(res, context.userId))) return;
 
     const { day, startTime, isAvailable } = req.body;
     if (!validateCreateSchedulePayload(res, req.body)) return;
@@ -76,6 +104,7 @@ export const updateOwnDoctorDayAvailability = async (req, res, next) => {
     if (!ensureDoctorAccess(res, context, "update schedule availability")) {
       return;
     }
+    if (!(await ensureDoctorVerificationApproved(res, context.userId))) return;
 
     const { day } = req.params;
     const { isAvailable } = req.body;
@@ -135,6 +164,7 @@ export const updateOwnDoctorSchedule = async (req, res, next) => {
   try {
     const context = getCurrentDoctorContext(req);
     if (!ensureDoctorAccess(res, context, "update schedules")) return;
+    if (!(await ensureDoctorVerificationApproved(res, context.userId))) return;
 
     const { scheduleId } = req.params;
     const { day, startTime, isAvailable } = req.body;
