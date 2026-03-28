@@ -6,6 +6,7 @@ import {
 	acceptAppointment,
 	rejectAppointment,
 	cancelAppointment,
+	rescheduleAppointment,
 } from "../controllers/appointmentController.js";
 
 const router = express.Router();
@@ -27,5 +28,8 @@ router.patch("/:id/reject", rejectAppointment);
 
 // PATCH /api/appointments/:id/cancel
 router.patch("/:id/cancel", cancelAppointment);
+
+// PATCH /api/appointments/:id/reschedule
+router.patch("/:id/reschedule", rescheduleAppointment);
 
 export default router;

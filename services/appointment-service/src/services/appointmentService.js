@@ -221,6 +221,51 @@ export const cancelAppointment = async (id, requester) => {
   return appointment;
 };
 
+export const rescheduleAppointment = async (id, requester, data) => {
+  if (!requester || requester.role !== "patient") {
+    const err = new Error("Only patients can change appointment schedule");
+    err.statusCode = 403;
+    throw err;
+  }
+
+  const { scheduleId } = data || {};
+  if (!scheduleId) {
+    const err = new Error("scheduleId is required to reschedule");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const appointment = await Appointment.findById(id);
+  if (!appointment) {
+    const err = new Error("Appointment not found");
+    err.statusCode = 404;
+    throw err;
+  }
+
+  const userId = requester.id;
+  const isPatientOwner =
+    appointment.patientId && appointment.patientId.toString() === userId;
+
+  if (!isPatientOwner) {
+    const err = new Error("You can only change your own appointments");
+    err.statusCode = 403;
+    throw err;
+  }
+
+  if (appointment.status !== "pending") {
+    const err = new Error(
+      "Only appointments in pending status can be rescheduled",
+    );
+    err.statusCode = 400;
+    throw err;
+  }
+
+  appointment.scheduleId = scheduleId;
+  await appointment.save();
+
+  return appointment;
+};
+
 export default {
   createAppointment,
   getAppointments,
@@ -228,4 +273,5 @@ export default {
   acceptAppointment,
   rejectAppointment,
   cancelAppointment,
+  rescheduleAppointment,
 };
