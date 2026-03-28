@@ -9,6 +9,7 @@ import {
   grantDoctorAccessToPatientReport,
   revokeDoctorAccessToPatientReport,
   uploadPatientReport,
+  getReportsForAppointment,
 } from "../controllers/patientReportController.js";
 
 const router = express.Router();
@@ -30,6 +31,14 @@ router.get(
   "/shared-with-me",
   internalAuthMiddleware,
   getSharedWithMePatientReports,
+);
+
+// For doctors to fetch all reports attached to a specific appointment
+// where they are the doctor and the patient matches the report owner.
+router.get(
+  "/by-appointment/:appointmentId",
+  internalAuthMiddleware,
+  getReportsForAppointment,
 );
 
 router.get("/:id", internalAuthMiddleware, getPatientReportById);

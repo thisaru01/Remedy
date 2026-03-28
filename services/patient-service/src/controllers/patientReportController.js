@@ -1,4 +1,5 @@
 import PatientReport from "../models/patientReportModel.js";
+import { fetchAppointmentByIdForUser } from "../clients/appointmentClient.js";
 
 const hasActiveDoctorShare = (report, doctorId) => {
   if (!report || !doctorId) return false;
@@ -48,6 +49,42 @@ export const uploadPatientReport = async (req, res) => {
     });
   }
 
+  // If an appointmentId is provided, verify that it belongs to the
+  // authenticated patient before attaching the report to it.
+  if (typeof appointmentId === "string" && appointmentId.trim()) {
+    try {
+      const appointment = await fetchAppointmentByIdForUser(
+        appointmentId.trim(),
+        { id: userId, role },
+      );
+
+      if (!appointment) {
+        return res.status(404).json({
+          success: false,
+          message: "Appointment not found",
+        });
+      }
+
+      const isPatientOwner =
+        appointment.patientId &&
+        (appointment.patientId.toString
+          ? appointment.patientId.toString() === String(userId)
+          : String(appointment.patientId) === String(userId));
+
+      if (!isPatientOwner) {
+        return res.status(403).json({
+          success: false,
+          message: "You can only attach reports to your own appointments",
+        });
+      }
+    } catch (error) {
+      const status = error?.response?.status || 502;
+      const message =
+        error?.response?.data?.message || "Failed to validate appointment";
+      return res.status(status).json({ success: false, message });
+    }
+  }
+
   const report = await PatientReport.create({
     userId,
     title,
@@ -86,7 +123,14 @@ export const getMyPatientReports = async (req, res) => {
     });
   }
 
-  const reports = await PatientReport.find({ userId }).sort({ createdAt: -1 });
+  const appointmentId = (req.query?.appointmentId || "").trim();
+
+  const filter = { userId };
+  if (appointmentId) {
+    filter.appointmentId = appointmentId;
+  }
+
+  const reports = await PatientReport.find(filter).sort({ createdAt: -1 });
 
   return res.status(200).json({
     success: true,
@@ -221,6 +265,87 @@ export const getSharedWithMePatientReports = async (req, res) => {
   });
 };
 
+export const getReportsForAppointment = async (req, res) => {
+  const role = req.user?.role;
+  if (role !== "doctor") {
+    return res.status(403).json({
+      success: false,
+      message: "Access denied",
+    });
+  }
+
+  const doctorId = req.user?.id;
+  if (!doctorId) {
+    return res.status(400).json({
+      success: false,
+      message: "Missing user context",
+    });
+  }
+
+  const appointmentId = (req.params?.appointmentId || "").trim();
+  if (!appointmentId) {
+    return res.status(400).json({
+      success: false,
+      message: "appointmentId is required",
+    });
+  }
+
+  try {
+    const appointment = await fetchAppointmentByIdForUser(appointmentId, {
+      id: doctorId,
+      role,
+    });
+
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        message: "Appointment not found",
+      });
+    }
+
+    const isDoctorOwner =
+      appointment.doctorId &&
+      (appointment.doctorId.toString
+        ? appointment.doctorId.toString() === String(doctorId)
+        : String(appointment.doctorId) === String(doctorId));
+
+    if (!isDoctorOwner) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only view reports for your own appointments",
+      });
+    }
+
+    const patientId =
+      appointment.patientId &&
+      (appointment.patientId.toString
+        ? appointment.patientId.toString()
+        : String(appointment.patientId));
+
+    if (!patientId) {
+      return res.status(500).json({
+        success: false,
+        message: "Appointment is missing patient information",
+      });
+    }
+
+    const reports = await PatientReport.find({
+      appointmentId,
+      userId: patientId,
+    }).sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      data: reports,
+    });
+  } catch (error) {
+    const status = error?.response?.status || 502;
+    const message =
+      error?.response?.data?.message || "Failed to validate appointment";
+    return res.status(status).json({ success: false, message });
+  }
+};
+
 export const getPatientReportById = async (req, res) => {
   const role = req.user?.role;
   if (role !== "patient" && role !== "doctor") {
@@ -260,7 +385,41 @@ export const getPatientReportById = async (req, res) => {
     const isDoctorShared =
       role === "doctor" && hasActiveDoctorShare(report, userId);
 
-    if (!isPatientOwner && !isDoctorShared) {
+    let isDoctorFromAppointment = false;
+
+    // If the report is linked to an appointment, allow the doctor who owns
+    // that appointment (and its patient) to view the report, even if it
+    // wasn't explicitly shared.
+    if (!isPatientOwner && !isDoctorShared && role === "doctor") {
+      if (report.appointmentId) {
+        try {
+          const appointment = await fetchAppointmentByIdForUser(
+            report.appointmentId,
+            { id: userId, role },
+          );
+
+          if (appointment) {
+            const isDoctorOwner =
+              appointment.doctorId &&
+              (appointment.doctorId.toString
+                ? appointment.doctorId.toString() === String(userId)
+                : String(appointment.doctorId) === String(userId));
+            const isSamePatient =
+              appointment.patientId &&
+              (appointment.patientId.toString
+                ? appointment.patientId.toString() === String(report.userId)
+                : String(appointment.patientId) === String(report.userId));
+
+            isDoctorFromAppointment = Boolean(isDoctorOwner && isSamePatient);
+          }
+        } catch (error) {
+          // On failure to validate the appointment, keep access denied.
+          isDoctorFromAppointment = false;
+        }
+      }
+    }
+
+    if (!isPatientOwner && !isDoctorShared && !isDoctorFromAppointment) {
       return res.status(403).json({
         success: false,
         message: "Access denied",
