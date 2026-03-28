@@ -1,6 +1,7 @@
 import {
   createDoctorSchedule,
   getAllSchedules,
+  getScheduleByScheduleId,
   getSchedulesByDoctorId,
   getSchedulesForDoctor,
   updateDayAvailabilityForDoctor,
@@ -13,6 +14,7 @@ import {
   validateCreateSchedulePayload,
   validateDayAvailabilityPayload,
   validateDoctorIdParam,
+  validateScheduleIdParam,
   validateUpdateSchedulePayload,
 } from "../utils/validation.js";
 
@@ -160,6 +162,30 @@ export const getScheduleByDoctorId = async (req, res, next) => {
   }
 };
 
+export const getScheduleById = async (req, res, next) => {
+  try {
+    const { scheduleId } = req.params;
+
+    if (!validateScheduleIdParam(res, scheduleId)) return;
+
+    const schedule = await getScheduleByScheduleId(scheduleId);
+
+    if (!schedule) {
+      return res.status(404).json({
+        success: false,
+        message: "Schedule not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      schedule,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 export const updateOwnDoctorSchedule = async (req, res, next) => {
   try {
     const context = getCurrentDoctorContext(req);
@@ -169,12 +195,7 @@ export const updateOwnDoctorSchedule = async (req, res, next) => {
     const { scheduleId } = req.params;
     const { day, startTime, isAvailable } = req.body;
 
-    if (!scheduleId) {
-      return res.status(400).json({
-        success: false,
-        message: "scheduleId is required",
-      });
-    }
+    if (!validateScheduleIdParam(res, scheduleId)) return;
 
     if (!validateUpdateSchedulePayload(res, req.body)) return;
 

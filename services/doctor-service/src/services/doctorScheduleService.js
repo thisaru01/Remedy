@@ -42,6 +42,10 @@ export const getSchedulesByDoctorId = async (doctorId) => {
   });
 };
 
+export const getScheduleByScheduleId = async (scheduleId) => {
+  return DoctorSchedule.findById(scheduleId);
+};
+
 export const getAllSchedules = async () => {
   return DoctorSchedule.find().sort({
     doctorUserId: 1,
