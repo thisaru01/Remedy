@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  getUsers,
   login,
   register,
   updateUserStatus,
@@ -12,6 +13,7 @@ router.post("/register", register);
 router.post("/login", login);
 
 // Admin endpoints
+router.get("/users", protect, authorizeRoles("admin"), getUsers);
 router.patch(
   "/users/:userId/status",
   protect,

@@ -3,6 +3,27 @@ import axios from "axios";
 import mongoose from "mongoose";
 import User from "../models/userModel.js";
 
+const USER_STATUSES = ["active", "inactive"];
+const USER_ROLES = ["patient", "doctor", "admin"];
+
+const listUsers = async (res, filter) => {
+  const users = await User.find(filter).sort({ createdAt: -1 });
+  return res.status(200).json({
+    success: true,
+    count: users.length,
+    users: users.map((u) => ({
+      id: u._id,
+      name: u.name,
+      email: u.email,
+      role: u.role,
+      status: u.status,
+      profilePhoto: u.profilePhoto,
+      createdAt: u.createdAt,
+      updatedAt: u.updatedAt,
+    })),
+  });
+};
+
 // Generate JWT
 const generateToken = (user) => {
   return jwt.sign(
@@ -222,6 +243,39 @@ export const updateUserStatus = async (req, res, next) => {
         profilePhoto: updatedUser.profilePhoto,
       },
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Admin: Get all users (optional query filters: ?status=active|inactive&role=patient|doctor|admin)
+export const getUsers = async (req, res, next) => {
+  try {
+    const { status, role } = req.query ?? {};
+
+    const filter = {};
+
+    if (status !== undefined) {
+      if (!USER_STATUSES.includes(status)) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid status. Must be one of: ${USER_STATUSES.join(", ")}`,
+        });
+      }
+      filter.status = status;
+    }
+
+    if (role !== undefined) {
+      if (!USER_ROLES.includes(role)) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid role. Must be one of: ${USER_ROLES.join(", ")}`,
+        });
+      }
+      filter.role = role;
+    }
+
+    return await listUsers(res, filter);
   } catch (error) {
     next(error);
   }
