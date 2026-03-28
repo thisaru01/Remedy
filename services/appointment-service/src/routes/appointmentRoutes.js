@@ -1,5 +1,9 @@
 import express from "express";
-import { createAppointment } from "../controllers/appointmentController.js";
+import {
+	createAppointment,
+	getAppointments,
+	getAppointmentById,
+} from "../controllers/appointmentController.js";
 
 const router = express.Router();
 
@@ -7,7 +11,9 @@ const router = express.Router();
 router.post("/", createAppointment);
 
 // GET /api/appointments
-import { getAppointments } from "../controllers/appointmentController.js";
 router.get("/", getAppointments);
+
+// GET /api/appointments/:id
+router.get("/:id", getAppointmentById);
 
 export default router;
