@@ -7,6 +7,7 @@ import {
   updateOwnDoctorSchedule,
   getScheduleById,
   getScheduleByDoctorId,
+  getSchedulesByDoctorIdAndAvailability,
   getAllDoctorSchedules,
 } from "../controllers/doctorScheduleController.js";
 
@@ -16,6 +17,7 @@ router.post("/me", internalAuthMiddleware, createOwnDoctorSchedule);
 router.get("/me", internalAuthMiddleware, getOwnDoctorSchedules);
 router.put("/me/:scheduleId", internalAuthMiddleware, updateOwnDoctorSchedule);
 router.get("/all", getAllDoctorSchedules);
+router.get("/filter", getSchedulesByDoctorIdAndAvailability);
 router.put(
   "/me/:scheduleId/availability",
   internalAuthMiddleware,

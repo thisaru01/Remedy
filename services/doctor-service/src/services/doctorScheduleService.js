@@ -56,6 +56,19 @@ export const getSchedulesByDoctorId = async (doctorId) => {
   });
 };
 
+export const getSchedulesByDoctorIdAndAvailability = async ({
+  doctorId,
+  isAvailable,
+}) => {
+  return DoctorSchedule.find({
+    doctorUserId: doctorId,
+    isAvailable,
+  }).sort({
+    day: 1,
+    startTime: 1,
+  });
+};
+
 export const getScheduleByScheduleId = async (scheduleId) => {
   return DoctorSchedule.findById(scheduleId);
 };

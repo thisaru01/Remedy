@@ -3,6 +3,7 @@ import {
   getAllSchedules,
   getScheduleByScheduleId,
   getSchedulesByDoctorId,
+  getSchedulesByDoctorIdAndAvailability as getSchedulesByDoctorIdAndAvailabilityService,
   getSchedulesForDoctor,
   updateScheduleAvailabilityForDoctor,
   updateDoctorSchedule,
@@ -158,6 +159,52 @@ export const getScheduleByDoctorId = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
+      schedules,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const getSchedulesByDoctorIdAndAvailability = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    const { doctorId, isAvailable } = req.query;
+
+    if (!validateDoctorIdParam(res, doctorId)) return;
+
+    if (isAvailable === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: "isAvailable query param is required (true or false)",
+      });
+    }
+
+    if (isAvailable !== "true" && isAvailable !== "false") {
+      return res.status(400).json({
+        success: false,
+        message: "isAvailable must be 'true' or 'false'",
+      });
+    }
+
+    const schedules = await getSchedulesByDoctorIdAndAvailabilityService({
+      doctorId,
+      isAvailable: isAvailable === "true",
+    });
+
+    if (schedules.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No schedules found for this doctor with requested availability",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      count: schedules.length,
       schedules,
     });
   } catch (error) {
