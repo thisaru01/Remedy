@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import axios from "axios";
+import mongoose from "mongoose";
 import User from "../models/userModel.js";
 
 // Generate JWT
@@ -150,6 +151,13 @@ export const login = async (req, res, next) => {
       });
     }
 
+    if (user.status !== "active") {
+      return res.status(403).json({
+        success: false,
+        message: "Account is inactive",
+      });
+    }
+
     const token = generateToken(user);
 
     return res.status(200).json({
@@ -162,6 +170,56 @@ export const login = async (req, res, next) => {
         role: user.role,
         status: user.status,
         profilePhoto: user.profilePhoto,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Admin: Activate/Deactivate account
+export const updateUserStatus = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    const { status } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user id",
+      });
+    }
+
+    const allowedStatuses = ["active", "inactive"];
+    if (!status || !allowedStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid status. Must be one of: ${allowedStatuses.join(", ")}`,
+      });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { status },
+      { new: true, runValidators: true },
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      user: {
+        id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        status: updatedUser.status,
+        profilePhoto: updatedUser.profilePhoto,
       },
     });
   } catch (error) {
