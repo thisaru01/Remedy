@@ -7,6 +7,7 @@ import {
   getPatientReportById,
   getSharedWithMePatientReports,
   grantDoctorAccessToPatientReport,
+  revokeDoctorAccessToPatientReport,
   uploadPatientReport,
 } from "../controllers/patientReportController.js";
 
@@ -32,6 +33,11 @@ router.get(
 );
 
 router.get("/:id", internalAuthMiddleware, getPatientReportById);
+router.delete(
+  "/:id/grant-access/:doctorId",
+  internalAuthMiddleware,
+  revokeDoctorAccessToPatientReport,
+);
 
 router.get("/", internalAuthMiddleware, getMyPatientReports);
 

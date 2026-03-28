@@ -278,3 +278,73 @@ export const getPatientReportById = async (req, res) => {
     });
   }
 };
+
+export const revokeDoctorAccessToPatientReport = async (req, res) => {
+  const role = req.user?.role;
+  if (role !== "patient") {
+    return res.status(403).json({
+      success: false,
+      message: "Access denied",
+    });
+  }
+
+  const userId = req.user?.id;
+  if (!userId) {
+    return res.status(400).json({
+      success: false,
+      message: "Missing user context",
+    });
+  }
+
+  const reportId = req.params?.id;
+  const doctorId = req.params?.doctorId;
+
+  if (!reportId || !doctorId) {
+    return res.status(400).json({
+      success: false,
+      message: "report id and doctorId are required",
+    });
+  }
+
+  try {
+    const report = await PatientReport.findById(reportId);
+    if (!report) {
+      return res.status(404).json({
+        success: false,
+        message: "Report not found",
+      });
+    }
+
+    if (String(report.userId) !== String(userId)) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      });
+    }
+
+    // Use $pull for an atomic removal of the share entry.
+    const updateResult = await PatientReport.updateOne(
+      { _id: reportId, "sharedWith.doctorId": String(doctorId) },
+      { $pull: { sharedWith: { doctorId: String(doctorId) } } },
+    );
+
+    if (!updateResult || updateResult.matchedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Share not found",
+      });
+    }
+
+    const updated = await PatientReport.findById(reportId);
+
+    return res.status(200).json({
+      success: true,
+      data: updated,
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid report id",
+    });
+  }
+};
