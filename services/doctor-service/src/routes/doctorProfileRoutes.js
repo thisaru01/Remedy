@@ -2,6 +2,8 @@ import express from "express";
 import internalAuthMiddleware from "../middleware/internalAuthMiddleware.js";
 import {
   createDoctorProfile,
+  getApprovedDoctorProfiles,
+  getApprovedDoctorProfilesBySpecialty,
   getOwnDoctorProfile,
   submitOwnDoctorVerification,
   updateOwnDoctorProfile,
@@ -10,6 +12,12 @@ import {
 const router = express.Router();
 
 router.post("/", internalAuthMiddleware, createDoctorProfile);
+router.get("/verified", internalAuthMiddleware, getApprovedDoctorProfiles);
+router.get(
+  "/verified/specialty/:specialty",
+  internalAuthMiddleware,
+  getApprovedDoctorProfilesBySpecialty,
+);
 router.get("/me", internalAuthMiddleware, getOwnDoctorProfile);
 router.put("/me", internalAuthMiddleware, updateOwnDoctorProfile);
 router.put(

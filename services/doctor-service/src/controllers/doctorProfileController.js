@@ -1,4 +1,4 @@
-import DoctorProfile from "../models/doctorProfileModel.js";
+import * as doctorProfileService from "../services/doctorProfileService.js";
 
 const getCurrentDoctorContext = (req) => {
   const userId = req.user?.id;
@@ -10,161 +10,53 @@ const getCurrentDoctorContext = (req) => {
   };
 };
 
-const doctorUpdatableFields = [
-  "specialty",
-  "contactNo",
-  "bio",
-  "gender",
-  "languages",
-  "educations",
-  "workingHospitals",
-];
+const sendServiceError = (res, error) => {
+  if (!error?.statusCode) return false;
+
+  res.status(error.statusCode).json({
+    success: false,
+    message: error.message,
+  });
+
+  return true;
+};
 
 export const createDoctorProfile = async (req, res, next) => {
   try {
-    const {
-      userId,
-      specialty,
-      contactNo,
-      gender,
-      bio,
-      languages,
-      educations,
-      workingHospitals,
-    } = req.body;
-
-    if (!userId) {
-      return res.status(400).json({
-        success: false,
-        message: "userId is required",
-      });
-    }
-
-    const set = {};
-    if (specialty !== undefined) set.specialty = specialty;
-    if (contactNo !== undefined) set.contactNo = contactNo;
-    if (gender !== undefined) set.gender = gender;
-    if (bio !== undefined) set.bio = bio;
-    if (languages !== undefined) set.languages = languages;
-    if (educations !== undefined) set.educations = educations;
-    if (workingHospitals !== undefined) {
-      set.workingHospitals = workingHospitals;
-    }
-
-    const update = {
-      $setOnInsert: { userId },
-      ...(Object.keys(set).length ? { $set: set } : {}),
-    };
-
-    const profile = await DoctorProfile.findOneAndUpdate({ userId }, update, {
-      upsert: true,
-      returnDocument: "after",
-      runValidators: true,
-    });
+    const profile = await doctorProfileService.createDoctorProfile(req.body);
 
     return res.status(201).json({
       success: true,
       profile,
     });
   } catch (error) {
+    if (sendServiceError(res, error)) return;
     return next(error);
   }
 };
 
 export const getOwnDoctorProfile = async (req, res, next) => {
   try {
-    const { userId, role } = getCurrentDoctorContext(req);
-
-    if (!userId) {
-      return res.status(400).json({
-        success: false,
-        message: "Authenticated user id is required",
-      });
-    }
-
-    if (role !== "doctor") {
-      return res.status(403).json({
-        success: false,
-        message: "Only doctors can access doctor profiles",
-      });
-    }
-
-    const profile = await DoctorProfile.findOne({ userId });
-
-    if (!profile) {
-      return res.status(404).json({
-        success: false,
-        message: "Doctor profile not found",
-      });
-    }
+    const profile = await doctorProfileService.getOwnDoctorProfile(
+      getCurrentDoctorContext(req),
+    );
 
     return res.status(200).json({
       success: true,
       profile,
     });
   } catch (error) {
+    if (sendServiceError(res, error)) return;
     return next(error);
   }
 };
 
 export const updateOwnDoctorProfile = async (req, res, next) => {
   try {
-    const { userId, role } = getCurrentDoctorContext(req);
-
-    if (!userId) {
-      return res.status(400).json({
-        success: false,
-        message: "Authenticated user id is required",
-      });
-    }
-
-    if (role !== "doctor") {
-      return res.status(403).json({
-        success: false,
-        message: "Only doctors can update doctor profiles",
-      });
-    }
-
-    const existingProfile = await DoctorProfile.findOne({ userId });
-    if (!existingProfile) {
-      return res.status(404).json({
-        success: false,
-        message: "Doctor profile not found",
-      });
-    }
-
-    if (existingProfile.verification?.status === "not_submitted") {
-      return res.status(403).json({
-        success: false,
-        message:
-          "Please submit verification proof before updating profile information",
-      });
-    }
-
-    const set = {};
-    for (const field of doctorUpdatableFields) {
-      if (req.body[field] !== undefined) {
-        set[field] = req.body[field];
-      }
-    }
-
-    if (Object.keys(set).length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "No valid profile fields were provided",
-      });
-    }
-
-    const profile = await DoctorProfile.findOneAndUpdate(
-      { userId },
-      {
-        $set: set,
-      },
-      {
-        new: true,
-        runValidators: true,
-      },
-    );
+    const profile = await doctorProfileService.updateOwnDoctorProfile({
+      ...getCurrentDoctorContext(req),
+      updates: req.body,
+    });
 
     return res.status(200).json({
       success: true,
@@ -172,58 +64,19 @@ export const updateOwnDoctorProfile = async (req, res, next) => {
       profile,
     });
   } catch (error) {
+    if (sendServiceError(res, error)) return;
     return next(error);
   }
 };
 
 export const submitOwnDoctorVerification = async (req, res, next) => {
   try {
-    const { userId, role } = getCurrentDoctorContext(req);
-
-    if (!userId) {
-      return res.status(400).json({
-        success: false,
-        message: "Authenticated user id is required",
-      });
-    }
-
-    if (role !== "doctor") {
-      return res.status(403).json({
-        success: false,
-        message: "Only doctors can submit verification",
-      });
-    }
-
-    const { medicalLicenseNumber, medicalCouncil, licenseDocumentUrl } =
-      req.body;
-
-    if (!medicalLicenseNumber || !licenseDocumentUrl) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "medicalLicenseNumber and licenseDocumentUrl are required",
-      });
-    }
-
-    const profile = await DoctorProfile.findOneAndUpdate(
-      { userId },
-      {
-        $setOnInsert: { userId },
-        $set: {
-          verification: {
-            status: "submitted",
-            medicalLicenseNumber,
-            medicalCouncil,
-            licenseDocumentUrl,
-          },
-        },
-      },
-      {
-        upsert: true,
-        new: true,
-        runValidators: true,
-      },
-    );
+    const profile = await doctorProfileService.submitOwnDoctorVerification({
+      ...getCurrentDoctorContext(req),
+      medicalLicenseNumber: req.body.medicalLicenseNumber,
+      medicalCouncil: req.body.medicalCouncil,
+      licenseDocumentUrl: req.body.licenseDocumentUrl,
+    });
 
     return res.status(200).json({
       success: true,
@@ -231,6 +84,41 @@ export const submitOwnDoctorVerification = async (req, res, next) => {
       profile,
     });
   } catch (error) {
+    if (sendServiceError(res, error)) return;
+    return next(error);
+  }
+};
+
+export const getApprovedDoctorProfiles = async (req, res, next) => {
+  try {
+    const profiles = await doctorProfileService.getApprovedDoctorProfiles();
+
+    return res.status(200).json({
+      success: true,
+      count: profiles.length,
+      profiles,
+    });
+  } catch (error) {
+    if (sendServiceError(res, error)) return;
+    return next(error);
+  }
+};
+
+export const getApprovedDoctorProfilesBySpecialty = async (req, res, next) => {
+  try {
+    const { specialty, profiles } =
+      await doctorProfileService.getApprovedDoctorProfilesBySpecialty({
+        specialty: req.params.specialty,
+      });
+
+    return res.status(200).json({
+      success: true,
+      specialty,
+      count: profiles.length,
+      profiles,
+    });
+  } catch (error) {
+    if (sendServiceError(res, error)) return;
     return next(error);
   }
 };
