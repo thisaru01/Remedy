@@ -4,6 +4,7 @@ import {
 	getAppointments,
 	getAppointmentById,
 	acceptAppointment,
+	completeAppointment,
 	rejectAppointment,
 	cancelAppointment,
 	rescheduleAppointment,
@@ -22,6 +23,9 @@ router.get("/:id", getAppointmentById);
 
 // PATCH /api/appointments/:id/accept
 router.patch("/:id/accept", acceptAppointment);
+
+// PATCH /api/appointments/:id/complete
+router.patch("/:id/complete", completeAppointment);
 
 // PATCH /api/appointments/:id/reject
 router.patch("/:id/reject", rejectAppointment);

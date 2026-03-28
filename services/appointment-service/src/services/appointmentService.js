@@ -266,6 +266,49 @@ export const rescheduleAppointment = async (id, requester, data) => {
   return appointment;
 };
 
+export const completeAppointment = async (id, requester) => {
+  if (!requester || requester.role !== "doctor") {
+    const err = new Error("Only doctors can mark appointments as completed");
+    err.statusCode = 403;
+    throw err;
+  }
+
+  const appointment = await Appointment.findById(id);
+  if (!appointment) {
+    const err = new Error("Appointment not found");
+    err.statusCode = 404;
+    throw err;
+  }
+
+  // ensure payment was successful before allowing completion
+  if (appointment.paymentStatus !== "success") {
+    const err = new Error("Appointment payment must be successful before completing");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const userId = requester.id;
+  const isDoctorOwner =
+    appointment.doctorId && appointment.doctorId.toString() === userId;
+
+  if (!isDoctorOwner) {
+    const err = new Error("You can only complete your own appointments");
+    err.statusCode = 403;
+    throw err;
+  }
+
+  if (appointment.status !== "accepted") {
+    const err = new Error("Only accepted appointments can be marked completed");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  appointment.status = "completed";
+  await appointment.save();
+
+  return appointment;
+};
+
 export default {
   createAppointment,
   getAppointments,
@@ -274,4 +317,5 @@ export default {
   rejectAppointment,
   cancelAppointment,
   rescheduleAppointment,
+  completeAppointment,
 };
