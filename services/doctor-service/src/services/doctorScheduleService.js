@@ -35,6 +35,20 @@ export const updateDayAvailabilityForDoctor = async ({
   );
 };
 
+export const updateScheduleAvailabilityForDoctor = async ({
+  doctorUserId,
+  scheduleId,
+  isAvailable,
+}) => {
+  return DoctorSchedule.findOneAndUpdate(
+    { _id: scheduleId, doctorUserId },
+    {
+      $set: { isAvailable },
+    },
+    { new: true, runValidators: true },
+  );
+};
+
 export const getSchedulesByDoctorId = async (doctorId) => {
   return DoctorSchedule.find({ doctorUserId: doctorId }).sort({
     day: 1,

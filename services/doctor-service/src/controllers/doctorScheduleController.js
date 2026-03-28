@@ -4,7 +4,7 @@ import {
   getScheduleByScheduleId,
   getSchedulesByDoctorId,
   getSchedulesForDoctor,
-  updateDayAvailabilityForDoctor,
+  updateScheduleAvailabilityForDoctor,
   updateDoctorSchedule,
 } from "../services/doctorScheduleService.js";
 import DoctorProfile from "../models/doctorProfileModel.js";
@@ -12,7 +12,6 @@ import {
   ensureDoctorAccess,
   getCurrentDoctorContext,
   validateCreateSchedulePayload,
-  validateDayAvailabilityPayload,
   validateDoctorIdParam,
   validateScheduleIdParam,
   validateUpdateSchedulePayload,
@@ -108,30 +107,34 @@ export const updateOwnDoctorDayAvailability = async (req, res, next) => {
     }
     if (!(await ensureDoctorVerificationApproved(res, context.userId))) return;
 
-    const { day } = req.params;
+    const { scheduleId } = req.params;
     const { isAvailable } = req.body;
 
-    if (!validateDayAvailabilityPayload(res, day, isAvailable)) return;
+    if (!validateScheduleIdParam(res, scheduleId)) return;
+    if (typeof isAvailable !== "boolean") {
+      return res.status(400).json({
+        success: false,
+        message: "isAvailable is required and must be true or false",
+      });
+    }
 
-    const result = await updateDayAvailabilityForDoctor({
+    const schedule = await updateScheduleAvailabilityForDoctor({
       doctorUserId: context.userId,
-      day,
+      scheduleId,
       isAvailable,
     });
 
-    if (result.matchedCount === 0) {
+    if (!schedule) {
       return res.status(404).json({
         success: false,
-        message: "No schedules found for this day",
+        message: "Schedule not found or does not belong to this doctor",
       });
     }
 
     return res.status(200).json({
       success: true,
-      message: "Doctor day availability updated successfully",
-      day,
-      isAvailable,
-      updatedCount: result.modifiedCount,
+      message: "Doctor schedule availability updated successfully",
+      schedule,
     });
   } catch (error) {
     return next(error);

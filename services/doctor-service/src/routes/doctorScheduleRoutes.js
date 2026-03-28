@@ -17,7 +17,7 @@ router.get("/me", internalAuthMiddleware, getOwnDoctorSchedules);
 router.put("/me/:scheduleId", internalAuthMiddleware, updateOwnDoctorSchedule);
 router.get("/all", getAllDoctorSchedules);
 router.put(
-  "/me/day/:day/availability",
+  "/me/:scheduleId/availability",
   internalAuthMiddleware,
   updateOwnDoctorDayAvailability,
 );
