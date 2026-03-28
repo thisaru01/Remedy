@@ -5,6 +5,7 @@ import {
 	getAppointmentById,
 	acceptAppointment,
 	rejectAppointment,
+	cancelAppointment,
 } from "../controllers/appointmentController.js";
 
 const router = express.Router();
@@ -23,5 +24,8 @@ router.patch("/:id/accept", acceptAppointment);
 
 // PATCH /api/appointments/:id/reject
 router.patch("/:id/reject", rejectAppointment);
+
+// PATCH /api/appointments/:id/cancel
+router.patch("/:id/cancel", cancelAppointment);
 
 export default router;
