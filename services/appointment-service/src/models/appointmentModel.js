@@ -37,12 +37,6 @@ const appointmentSchema = new mongoose.Schema(
       ref: "Schedule",
       index: true,
     },
-    reportIds: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Report",
-      },
-    ],
   },
   { timestamps: true },
 );

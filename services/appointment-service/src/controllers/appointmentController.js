@@ -9,7 +9,12 @@ export const createAppointment = async (req, res, next) => {
       });
     }
 
-    const appointment = await appointmentService.createAppointment(req.body);
+    const appointmentData = {
+      ...req.body,
+      patientId: req.user.id,
+    };
+
+    const appointment = await appointmentService.createAppointment(appointmentData);
 
     return res.status(201).json({
       success: true,
