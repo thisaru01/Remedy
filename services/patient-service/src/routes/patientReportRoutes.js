@@ -33,8 +33,6 @@ router.get(
   getSharedWithMePatientReports,
 );
 
-// For doctors to fetch all reports attached to a specific appointment
-// where they are the doctor and the patient matches the report owner.
 router.get(
   "/by-appointment/:appointmentId",
   internalAuthMiddleware,
@@ -42,6 +40,7 @@ router.get(
 );
 
 router.get("/:id", internalAuthMiddleware, getPatientReportById);
+
 router.delete(
   "/:id/grant-access/:doctorId",
   internalAuthMiddleware,

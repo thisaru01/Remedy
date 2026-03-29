@@ -124,11 +124,14 @@ export const getMyPatientReports = async (req, res) => {
   }
 
   const appointmentId = (req.query?.appointmentId || "").trim();
+  if (appointmentId) {
+    return res.status(400).json({
+      success: false,
+      message: "appointmentId query parameter is not supported",
+    });
+  }
 
   const filter = { userId };
-  if (appointmentId) {
-    filter.appointmentId = appointmentId;
-  }
 
   const reports = await PatientReport.find(filter).sort({ createdAt: -1 });
 
@@ -267,15 +270,15 @@ export const getSharedWithMePatientReports = async (req, res) => {
 
 export const getReportsForAppointment = async (req, res) => {
   const role = req.user?.role;
-  if (role !== "doctor") {
+  if (role !== "doctor" && role !== "patient") {
     return res.status(403).json({
       success: false,
       message: "Access denied",
     });
   }
 
-  const doctorId = req.user?.id;
-  if (!doctorId) {
+  const userId = req.user?.id;
+  if (!userId) {
     return res.status(400).json({
       success: false,
       message: "Missing user context",
@@ -291,8 +294,9 @@ export const getReportsForAppointment = async (req, res) => {
   }
 
   try {
+    // Validate appointment access for the caller (doctor or patient)
     const appointment = await fetchAppointmentByIdForUser(appointmentId, {
-      id: doctorId,
+      id: userId,
       role,
     });
 
@@ -303,24 +307,43 @@ export const getReportsForAppointment = async (req, res) => {
       });
     }
 
-    const isDoctorOwner =
-      appointment.doctorId &&
-      (appointment.doctorId.toString
-        ? appointment.doctorId.toString() === String(doctorId)
-        : String(appointment.doctorId) === String(doctorId));
+    // If caller is a doctor, ensure they own the appointment.
+    if (role === "doctor") {
+      const isDoctorOwner =
+        appointment.doctorId &&
+        (appointment.doctorId.toString
+          ? appointment.doctorId.toString() === String(userId)
+          : String(appointment.doctorId) === String(userId));
 
-    if (!isDoctorOwner) {
-      return res.status(403).json({
-        success: false,
-        message: "You can only view reports for your own appointments",
-      });
+      if (!isDoctorOwner) {
+        return res.status(403).json({
+          success: false,
+          message: "You can only view reports for your own appointments",
+        });
+      }
     }
 
-    const patientId =
-      appointment.patientId &&
-      (appointment.patientId.toString
+    // If caller is a patient, ensure they own the appointment.
+    if (role === "patient") {
+      const isPatientOwner =
+        appointment.patientId &&
+        (appointment.patientId.toString
+          ? appointment.patientId.toString() === String(userId)
+          : String(appointment.patientId) === String(userId));
+
+      if (!isPatientOwner) {
+        return res.status(403).json({
+          success: false,
+          message: "You can only view reports for your own appointments",
+        });
+      }
+    }
+
+    const patientId = appointment.patientId
+      ? appointment.patientId.toString
         ? appointment.patientId.toString()
-        : String(appointment.patientId));
+        : String(appointment.patientId)
+      : null;
 
     if (!patientId) {
       return res.status(500).json({
