@@ -11,7 +11,7 @@ export const createGatewayRoutes = ({ protect, proxyTo, services }) => {
   const router = express.Router();
 
   router.use(createHealthRoutes());
-  router.use(createAuthRoutes({ proxyTo, services }));
+  router.use(createAuthRoutes({ protect, proxyTo, services }));
   router.use(createPatientRoutes({ protect, proxyTo, services }));
   router.use(createDoctorRoutes({ protect, proxyTo, services }));
   router.use(createAppointmentRoutes({ protect, proxyTo, services }));

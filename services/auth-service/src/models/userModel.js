@@ -28,8 +28,8 @@ const userSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["pending", "active", "rejected"],
-      default: "pending",
+      enum: ["active", "inactive"],
+      default: "active",
     },
     profilePhoto: {
       type: String,

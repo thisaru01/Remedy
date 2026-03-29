@@ -34,6 +34,29 @@ const patientReportSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    sharedWith: {
+      type: [
+        {
+          doctorId: {
+            type: String,
+            required: true,
+            index: true,
+          },
+          grantedAt: {
+            type: Date,
+            required: true,
+            default: Date.now,
+          },
+          expiresAt: {
+            type: Date,
+            required: false,
+            default: null,
+          },
+        },
+      ],
+      required: true,
+      default: [],
+    },
   },
   {
     timestamps: true,

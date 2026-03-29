@@ -28,7 +28,7 @@ export const createPatientRoutes = ({ protect, proxyTo, services }) => {
 
   router.use(
     "/api/patient-reports",
-    authorizeRoles("patient"),
+    authorizeRoles("patient", "doctor"),
     proxyTo(services.patient, {
       addUserContext: true,
       basePath: "/api/patient-reports",

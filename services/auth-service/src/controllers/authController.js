@@ -1,6 +1,28 @@
 import jwt from "jsonwebtoken";
 import axios from "axios";
+import mongoose from "mongoose";
 import User from "../models/userModel.js";
+
+const USER_STATUSES = ["active", "inactive"];
+const USER_ROLES = ["patient", "doctor", "admin"];
+
+const listUsers = async (res, filter) => {
+  const users = await User.find(filter).sort({ createdAt: -1 });
+  return res.status(200).json({
+    success: true,
+    count: users.length,
+    users: users.map((u) => ({
+      id: u._id,
+      name: u.name,
+      email: u.email,
+      role: u.role,
+      status: u.status,
+      profilePhoto: u.profilePhoto,
+      createdAt: u.createdAt,
+      updatedAt: u.updatedAt,
+    })),
+  });
+};
 
 // Generate JWT
 const generateToken = (user) => {
@@ -150,6 +172,13 @@ export const login = async (req, res, next) => {
       });
     }
 
+    if (user.status !== "active") {
+      return res.status(403).json({
+        success: false,
+        message: "Account is inactive",
+      });
+    }
+
     const token = generateToken(user);
 
     return res.status(200).json({
@@ -164,6 +193,89 @@ export const login = async (req, res, next) => {
         profilePhoto: user.profilePhoto,
       },
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Admin: Activate/Deactivate account
+export const updateUserStatus = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    const { status } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user id",
+      });
+    }
+
+    const allowedStatuses = ["active", "inactive"];
+    if (!status || !allowedStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid status. Must be one of: ${allowedStatuses.join(", ")}`,
+      });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { status },
+      { new: true, runValidators: true },
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      user: {
+        id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        status: updatedUser.status,
+        profilePhoto: updatedUser.profilePhoto,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Admin: Get all users (optional query filters: ?status=active|inactive&role=patient|doctor|admin)
+export const getUsers = async (req, res, next) => {
+  try {
+    const { status, role } = req.query ?? {};
+
+    const filter = {};
+
+    if (status !== undefined) {
+      if (!USER_STATUSES.includes(status)) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid status. Must be one of: ${USER_STATUSES.join(", ")}`,
+        });
+      }
+      filter.status = status;
+    }
+
+    if (role !== undefined) {
+      if (!USER_ROLES.includes(role)) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid role. Must be one of: ${USER_ROLES.join(", ")}`,
+        });
+      }
+      filter.role = role;
+    }
+
+    return await listUsers(res, filter);
   } catch (error) {
     next(error);
   }
