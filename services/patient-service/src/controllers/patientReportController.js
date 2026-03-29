@@ -1,5 +1,6 @@
 import PatientReport from "../models/patientReportModel.js";
 import { fetchAppointmentByIdForUser } from "../clients/appointmentClient.js";
+import { cloudinary } from "../config/cloudinary.js";
 
 const hasActiveDoctorShare = (report, doctorId) => {
   if (!report || !doctorId) return false;
@@ -528,5 +529,60 @@ export const revokeDoctorAccessToPatientReport = async (req, res) => {
       success: false,
       message: "Invalid report id",
     });
+  }
+};
+
+export const deletePatientReport = async (req, res) => {
+  const role = req.user?.role;
+  if (role !== "patient") {
+    return res.status(403).json({
+      success: false,
+      message: "Access denied",
+    });
+  }
+
+  const userId = req.user?.id;
+  if (!userId) {
+    return res.status(400).json({
+      success: false,
+      message: "Missing user context",
+    });
+  }
+
+  const reportId = req.params?.id;
+  if (!reportId) {
+    return res.status(400).json({
+      success: false,
+      message: "Report id is required",
+    });
+  }
+
+  try {
+    const report = await PatientReport.findById(reportId);
+    if (!report) {
+      return res.status(404).json({ success: false, message: "Report not found" });
+    }
+
+    if (String(report.userId) !== String(userId)) {
+      return res.status(403).json({ success: false, message: "Access denied" });
+    }
+
+    // Attempt to remove the file from Cloudinary. Ignore failures here
+    // so the document can still be removed if the remote file was already gone.
+    try {
+      if (report.cloudinaryPublicId) {
+        await cloudinary.uploader.destroy(String(report.cloudinaryPublicId), {
+          resource_type: "auto",
+        });
+      }
+    } catch (err) {
+      // swallow cloudinary errors and proceed to delete DB record
+    }
+
+    await PatientReport.deleteOne({ _id: reportId });
+
+    return res.status(200).json({ success: true, message: "Report deleted" });
+  } catch (error) {
+    return res.status(400).json({ success: false, message: "Invalid report id" });
   }
 };

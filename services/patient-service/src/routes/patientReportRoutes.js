@@ -9,6 +9,7 @@ import {
   grantDoctorAccessToPatientReport,
   revokeDoctorAccessToPatientReport,
   uploadPatientReport,
+  deletePatientReport,
   getReportsForAppointment,
 } from "../controllers/patientReportController.js";
 
@@ -40,6 +41,8 @@ router.get(
 );
 
 router.get("/:id", internalAuthMiddleware, getPatientReportById);
+
+router.delete("/:id", internalAuthMiddleware, deletePatientReport);
 
 router.delete(
   "/:id/grant-access/:doctorId",
