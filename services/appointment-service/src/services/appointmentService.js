@@ -32,6 +32,8 @@ const ensureScheduleIsBookable = async (scheduleId) => {
       err.statusCode = 400;
       throw err;
     }
+
+    return schedule;
   } catch (error) {
     if (error.response?.status === 404) {
       const err = new Error("Schedule not found");
@@ -46,6 +48,35 @@ const ensureScheduleIsBookable = async (scheduleId) => {
     const err = new Error("Failed to verify schedule availability");
     err.statusCode = 502;
     throw err;
+  }
+};
+
+const updateScheduleSlotCountFromAppointment = async (
+  scheduleId,
+  newSlotCount,
+) => {
+  if (!Number.isInteger(newSlotCount) || newSlotCount < 0 || newSlotCount > 6) {
+    return;
+  }
+
+  try {
+    await axios.patch(
+      `${DOCTOR_SERVICE_BASE_URL}/api/doctor-schedules/internal/${scheduleId}/slot-count`,
+      { slotCount: newSlotCount },
+      {
+        headers: {
+          "x-internal-token": process.env.INTERNAL_SERVICE_TOKEN || "",
+        },
+      },
+    );
+  } catch (error) {
+    // Do not fail the already-created appointment if this internal update fails.
+    // Consider adding proper logging/monitoring in a real environment.
+    console.error("Failed to update schedule slotCount from appointment", {
+      scheduleId,
+      newSlotCount,
+      error: error?.message,
+    });
   }
 };
 
@@ -77,7 +108,7 @@ export const createAppointment = async (data) => {
     throw err;
   }
 
-  await ensureScheduleIsBookable(scheduleId);
+  const schedule = await ensureScheduleIsBookable(scheduleId);
   // appointmentNumber may be provided; if not, generate an atomic incremental value
   let finalAppointmentNumber = appointmentNumber;
 
@@ -110,6 +141,12 @@ export const createAppointment = async (data) => {
     paymentStatus: paymentStatus || undefined,
     reportIds: Array.isArray(reportIds) ? reportIds : undefined,
   });
+
+  // Decrement the schedule's remaining slots after a successful appointment creation.
+  await updateScheduleSlotCountFromAppointment(
+    scheduleId,
+    (schedule.slotCount ?? 0) - 1,
+  );
 
   return appointment;
 };
