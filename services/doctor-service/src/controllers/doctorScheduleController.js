@@ -7,6 +7,7 @@ import {
   getSchedulesForDoctor,
   updateScheduleAvailabilityForDoctor,
   updateDoctorSchedule,
+  updateScheduleSlotCountById,
 } from "../services/doctorScheduleService.js";
 import DoctorProfile from "../models/doctorProfileModel.js";
 import {
@@ -299,6 +300,67 @@ export const getAllDoctorSchedules = async (req, res, next) => {
       schedules,
     });
   } catch (error) {
+    return next(error);
+  }
+};
+
+export const updateScheduleSlotCountFromAppointment = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    if (req.user?.id || req.user?.role) {
+      return res.status(403).json({
+        success: false,
+        message: "This endpoint is internal and not accessible by doctor users",
+      });
+    }
+
+    const { scheduleId } = req.params;
+    const { slotCount } = req.body;
+
+    if (!validateScheduleIdParam(res, scheduleId)) return;
+
+    if (!Number.isInteger(slotCount)) {
+      return res.status(400).json({
+        success: false,
+        message: "slotCount is required and must be an integer",
+      });
+    }
+
+    if (slotCount < 0 || slotCount > 6) {
+      return res.status(400).json({
+        success: false,
+        message: "slotCount must be between 0 and 6",
+      });
+    }
+
+    const schedule = await updateScheduleSlotCountById({
+      scheduleId,
+      slotCount,
+    });
+
+    if (!schedule) {
+      return res.status(404).json({
+        success: false,
+        message: "Schedule not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Schedule slotCount updated successfully",
+      schedule,
+    });
+  } catch (error) {
+    if (error?.name === "ValidationError") {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
     return next(error);
   }
 };

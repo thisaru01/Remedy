@@ -100,3 +100,16 @@ export const updateDoctorSchedule = async ({
     { new: true, runValidators: true },
   );
 };
+
+export const updateScheduleSlotCountById = async ({
+  scheduleId,
+  slotCount,
+}) => {
+  return DoctorSchedule.findByIdAndUpdate(
+    scheduleId,
+    {
+      $set: { slotCount },
+    },
+    { new: true, runValidators: true },
+  );
+};

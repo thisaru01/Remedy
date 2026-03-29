@@ -9,6 +9,7 @@ import {
   getScheduleByDoctorId,
   getSchedulesByDoctorIdAndAvailability,
   getAllDoctorSchedules,
+  updateScheduleSlotCountFromAppointment,
 } from "../controllers/doctorScheduleController.js";
 
 const router = express.Router();
@@ -18,6 +19,11 @@ router.get("/me", internalAuthMiddleware, getOwnDoctorSchedules);
 router.put("/me/:scheduleId", internalAuthMiddleware, updateOwnDoctorSchedule);
 router.get("/all", getAllDoctorSchedules);
 router.get("/filter", getSchedulesByDoctorIdAndAvailability);
+router.patch(
+  "/internal/:scheduleId/slot-count",
+  internalAuthMiddleware,
+  updateScheduleSlotCountFromAppointment,
+);
 router.put(
   "/me/:scheduleId/availability",
   internalAuthMiddleware,
