@@ -28,8 +28,8 @@ const doctorScheduleSchema = new mongoose.Schema(
     slotCount: {
       type: Number,
       default: 6,
-      enum: [6],
-      immutable: true,
+      min: 0,
+      max: 6,
     },
     isAvailable: {
       type: Boolean,
