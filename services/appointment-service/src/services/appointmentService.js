@@ -1,5 +1,53 @@
 import mongoose from "mongoose";
+import axios from "axios";
 import Appointment from "../models/appointmentModel.js";
+
+const DOCTOR_SERVICE_BASE_URL =
+  process.env.DOCTOR_SERVICE_URL || "http://doctor-service:5000";
+
+const ensureScheduleIsBookable = async (scheduleId) => {
+  try {
+    const response = await axios.get(
+      `${DOCTOR_SERVICE_BASE_URL}/api/doctor-schedules/schedule/${scheduleId}`,
+    );
+
+    const schedule = response.data?.schedule || response.data;
+
+    if (!schedule) {
+      const err = new Error("Schedule not found");
+      err.statusCode = 404;
+      throw err;
+    }
+
+    if (schedule.isAvailable !== true) {
+      const err = new Error("Doctor is not available for this schedule");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    if (schedule.slotCount <= 0) {
+      const err = new Error(
+        "Schedule is not available for booking (no slots remaining)",
+      );
+      err.statusCode = 400;
+      throw err;
+    }
+  } catch (error) {
+    if (error.response?.status === 404) {
+      const err = new Error("Schedule not found");
+      err.statusCode = 404;
+      throw err;
+    }
+
+    if (error.statusCode) {
+      throw error;
+    }
+
+    const err = new Error("Failed to verify schedule availability");
+    err.statusCode = 502;
+    throw err;
+  }
+};
 
 export const createAppointment = async (data) => {
   const {
@@ -28,6 +76,8 @@ export const createAppointment = async (data) => {
     err.statusCode = 400;
     throw err;
   }
+
+  await ensureScheduleIsBookable(scheduleId);
   // appointmentNumber may be provided; if not, generate an atomic incremental value
   let finalAppointmentNumber = appointmentNumber;
 

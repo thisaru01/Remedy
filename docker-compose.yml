@@ -74,6 +74,7 @@ services:
       PORT: 5000
       MONGO_URI: ${APPOINTMENT_MONGO_URI:?APPOINTMENT_MONGO_URI is required}
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-dev_internal_token_change_me}
+      DOCTOR_SERVICE_URL: ${DOCTOR_SERVICE_URL:-http://doctor-service:5000}
     ports:
       - "5003:5000"
 
