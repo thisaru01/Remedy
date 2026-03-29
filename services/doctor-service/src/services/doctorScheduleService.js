@@ -35,11 +35,42 @@ export const updateDayAvailabilityForDoctor = async ({
   );
 };
 
+export const updateScheduleAvailabilityForDoctor = async ({
+  doctorUserId,
+  scheduleId,
+  isAvailable,
+}) => {
+  return DoctorSchedule.findOneAndUpdate(
+    { _id: scheduleId, doctorUserId },
+    {
+      $set: { isAvailable },
+    },
+    { new: true, runValidators: true },
+  );
+};
+
 export const getSchedulesByDoctorId = async (doctorId) => {
   return DoctorSchedule.find({ doctorUserId: doctorId }).sort({
     day: 1,
     startTime: 1,
   });
+};
+
+export const getSchedulesByDoctorIdAndAvailability = async ({
+  doctorId,
+  isAvailable,
+}) => {
+  return DoctorSchedule.find({
+    doctorUserId: doctorId,
+    isAvailable,
+  }).sort({
+    day: 1,
+    startTime: 1,
+  });
+};
+
+export const getScheduleByScheduleId = async (scheduleId) => {
+  return DoctorSchedule.findById(scheduleId);
 };
 
 export const getAllSchedules = async () => {
@@ -65,6 +96,19 @@ export const updateDoctorSchedule = async ({
         ...(startTime !== undefined ? { startTime } : {}),
         ...(isAvailable !== undefined ? { isAvailable } : {}),
       },
+    },
+    { new: true, runValidators: true },
+  );
+};
+
+export const updateScheduleSlotCountById = async ({
+  scheduleId,
+  slotCount,
+}) => {
+  return DoctorSchedule.findByIdAndUpdate(
+    scheduleId,
+    {
+      $set: { slotCount },
     },
     { new: true, runValidators: true },
   );

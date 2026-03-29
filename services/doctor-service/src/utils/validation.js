@@ -1,4 +1,5 @@
 import { DOCTOR_SCHEDULE_DAYS } from "./doctorScheduleTimeUtils.js";
+import mongoose from "mongoose";
 
 export const getCurrentDoctorContext = (req) => {
   const userId = req.user?.id;
@@ -84,6 +85,34 @@ export const validateDoctorIdParam = (res, doctorId) => {
     res.status(400).json({
       success: false,
       message: "doctorId is required",
+    });
+    return false;
+  }
+
+  if (!mongoose.isValidObjectId(doctorId)) {
+    res.status(400).json({
+      success: false,
+      message: "doctorId must be a valid ObjectId",
+    });
+    return false;
+  }
+
+  return true;
+};
+
+export const validateScheduleIdParam = (res, scheduleId) => {
+  if (!scheduleId) {
+    res.status(400).json({
+      success: false,
+      message: "scheduleId is required",
+    });
+    return false;
+  }
+
+  if (!mongoose.isValidObjectId(scheduleId)) {
+    res.status(400).json({
+      success: false,
+      message: "scheduleId must be a valid ObjectId",
     });
     return false;
   }
