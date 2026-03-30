@@ -9,7 +9,12 @@ export const createAppointment = async (req, res, next) => {
       });
     }
 
-    const appointment = await appointmentService.createAppointment(req.body);
+    const appointmentData = {
+      ...req.body,
+      patientId: req.user.id,
+    };
+
+    const appointment = await appointmentService.createAppointment(appointmentData);
 
     return res.status(201).json({
       success: true,
@@ -25,11 +30,12 @@ export const createAppointment = async (req, res, next) => {
 
 export const getAppointments = async (req, res, next) => {
   try {
-    const { patientId, doctorId } = req.query;
+    const { patientId, doctorId, status } = req.query;
     const filter = {};
 
     if (patientId) filter.patientId = patientId;
     if (doctorId) filter.doctorId = doctorId;
+    if (status) filter.status = status;
 
     // If requester is a patient or doctor, restrict to their own appointments
     if (req.user && req.user.role === "patient") {
@@ -143,6 +149,22 @@ export const completeAppointment = async (req, res, next) => {
     const { id } = req.params;
 
     const appointment = await appointmentService.completeAppointment(id, req.user);
+
+    return res.status(200).json({ success: true, appointment });
+  } catch (error) {
+    if (error.statusCode) {
+      return res
+        .status(error.statusCode)
+        .json({ success: false, message: error.message });
+    }
+    return next(error);
+  }
+};
+export const deleteAppointment = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const appointment = await appointmentService.deleteAppointment(id, req.user);
 
     return res.status(200).json({ success: true, appointment });
   } catch (error) {

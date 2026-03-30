@@ -17,7 +17,6 @@ const appointmentSchema = new mongoose.Schema(
     appointmentNumber: {
       type: String,
       required: true,
-      unique: true,
     },
     // Removed `date` and `time` fields — scheduling can be handled elsewhere
     status: {
@@ -37,12 +36,6 @@ const appointmentSchema = new mongoose.Schema(
       ref: "Schedule",
       index: true,
     },
-    reportIds: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Report",
-      },
-    ],
   },
   { timestamps: true },
 );
