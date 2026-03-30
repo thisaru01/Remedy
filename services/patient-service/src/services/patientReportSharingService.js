@@ -1,5 +1,9 @@
 import PatientReport from "../models/patientReportModel.js";
 import { fetchAppointmentByIdForUser } from "../clients/appointmentClient.js";
+import {
+  parseExpiresAt,
+  validateReportIdFormat,
+} from "../validation/patientReportValidation.js";
 
 // Check if a report is currently shared with a given doctor
 const hasActiveDoctorShare = (report, doctorId) => {
@@ -55,6 +59,16 @@ export const grantDoctorAccessToPatientReportService = async ({
     };
   }
 
+  if (!mongoose.isValidObjectId(reportId)) {
+    return {
+      status: 400,
+      body: {
+        success: false,
+        message: "Invalid report id",
+      },
+    };
+  }
+
   if (!doctorId) {
     return {
       status: 400,
@@ -65,22 +79,17 @@ export const grantDoctorAccessToPatientReportService = async ({
     };
   }
 
-  let expiresAt = null;
-  if (body?.expiresAt) {
-    const parsed = new Date(body.expiresAt);
-    if (Number.isNaN(parsed.getTime())) {
-      return {
-        status: 400,
-        body: {
-          success: false,
-          message: "expiresAt must be a valid date",
-        },
-      };
-    }
-    expiresAt = parsed;
+  const { expiresAt, error: expiresAtError } = parseExpiresAt(body?.expiresAt);
+  if (expiresAtError) {
+    return expiresAtError;
   }
 
   try {
+    const idError = validateReportIdFormat(reportId);
+    if (idError) {
+      return idError;
+    }
+
     const report = await PatientReport.findById(reportId);
 
     if (!report) {
@@ -218,6 +227,20 @@ export const getPatientReportByIdService = async ({ user, params }) => {
     };
   }
 
+  if (!mongoose.isValidObjectId(reportId)) {
+    return {
+      status: 400,
+      body: {
+        success: false,
+        message: "Invalid report id",
+      },
+    };
+  }
+  const idError = validateReportIdFormat(reportId);
+  if (idError) {
+    return idError;
+  }
+
   try {
     const report = await PatientReport.findById(reportId);
     if (!report) {
@@ -331,6 +354,20 @@ export const revokeDoctorAccessToPatientReportService = async ({
         message: "report id and doctorId are required",
       },
     };
+  }
+
+  if (!mongoose.isValidObjectId(reportId)) {
+    return {
+      status: 400,
+      body: {
+        success: false,
+        message: "Invalid report id",
+      },
+    };
+  }
+  const idError = validateReportIdFormat(reportId);
+  if (idError) {
+    return idError;
   }
 
   try {

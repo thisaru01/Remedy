@@ -1,6 +1,7 @@
 import PatientReport from "../models/patientReportModel.js";
 import { fetchAppointmentByIdForUser } from "../clients/appointmentClient.js";
 import { cloudinary } from "../config/cloudinary.js";
+import { validateReportIdFormat } from "../validation/patientReportValidation.js";
 
 // Upload a new patient report file and optionally link to an appointment
 export const uploadPatientReportService = async ({ user, file, body }) => {
@@ -325,6 +326,11 @@ export const deletePatientReportService = async ({ user, params }) => {
         message: "Report id is required",
       },
     };
+  }
+
+  const idError = validateReportIdFormat(reportId);
+  if (idError) {
+    return idError;
   }
 
   try {

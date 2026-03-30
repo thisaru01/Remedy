@@ -1,25 +1,25 @@
 import PatientProfile from "../models/patientProfileModel.js";
 import mongoose from "mongoose";
+import {
+  validateProfileFields,
+  validateUserIdObjectId,
+} from "../validation/patientProfileValidation.js";
 
 // Create or upsert a patient profile for a given user
 export const createPatientProfileService = async (body) => {
-  const { userId, dateOfBirth, gender, phone, address } = body ?? {};
+  const { userId } = body ?? {};
 
-  if (!userId) {
-    return {
-      status: 400,
-      body: {
-        success: false,
-        message: "userId is required",
-      },
-    };
+  const userIdValidationError = validateUserIdObjectId(userId, {
+    fieldName: "userId",
+  });
+  if (userIdValidationError) {
+    return userIdValidationError;
   }
 
-  const set = {};
-  if (dateOfBirth !== undefined) set.dateOfBirth = dateOfBirth;
-  if (gender !== undefined) set.gender = gender;
-  if (phone !== undefined) set.phone = phone;
-  if (address !== undefined) set.address = address;
+  const { error, set } = validateProfileFields(body);
+  if (error) {
+    return error;
+  }
 
   const update = {
     $setOnInsert: { userId },
@@ -43,23 +43,19 @@ export const createPatientProfileService = async (body) => {
 
 // Update an existing patient profile by userId
 export const updatePatientProfileService = async (body) => {
-  const { userId, dateOfBirth, gender, phone, address } = body ?? {};
+  const { userId } = body ?? {};
 
-  if (!userId) {
-    return {
-      status: 400,
-      body: {
-        success: false,
-        message: "userId is required",
-      },
-    };
+  const userIdValidationError = validateUserIdObjectId(userId, {
+    fieldName: "userId",
+  });
+  if (userIdValidationError) {
+    return userIdValidationError;
   }
 
-  const set = {};
-  if (dateOfBirth !== undefined) set.dateOfBirth = dateOfBirth;
-  if (gender !== undefined) set.gender = gender;
-  if (phone !== undefined) set.phone = phone;
-  if (address !== undefined) set.address = address;
+  const { error, set } = validateProfileFields(body);
+  if (error) {
+    return error;
+  }
 
   if (!Object.keys(set).length) {
     return {
@@ -110,8 +106,6 @@ export const updateMyPatientProfileService = async ({ user, body }) => {
   }
 
   const userId = user?.id;
-  const { dateOfBirth, gender, phone, address } = body ?? {};
-
   if (!userId) {
     return {
       status: 400,
@@ -122,11 +116,18 @@ export const updateMyPatientProfileService = async ({ user, body }) => {
     };
   }
 
-  const set = {};
-  if (dateOfBirth !== undefined) set.dateOfBirth = dateOfBirth;
-  if (gender !== undefined) set.gender = gender;
-  if (phone !== undefined) set.phone = phone;
-  if (address !== undefined) set.address = address;
+  const userIdValidationError = validateUserIdObjectId(userId, {
+    fieldName: "user id",
+    invalidMessage: "Invalid user id",
+  });
+  if (userIdValidationError) {
+    return userIdValidationError;
+  }
+
+  const { error, set } = validateProfileFields(body);
+  if (error) {
+    return error;
+  }
 
   if (!Object.keys(set).length) {
     return {
