@@ -9,6 +9,7 @@ import {
   grantDoctorAccessToPatientReport,
   revokeDoctorAccessToPatientReport,
   uploadPatientReport,
+  updatePatientReport,
   deletePatientReport,
   getReportsForAppointment,
 } from "../controllers/patientReportController.js";
@@ -46,6 +47,9 @@ router.get(
 
 // Get a single report by id
 router.get("/:id", internalAuthMiddleware, getPatientReportById);
+
+// Update a report's metadata
+router.put("/:id", internalAuthMiddleware, updatePatientReport);
 
 // Delete a report owned by the authenticated patient
 router.delete("/:id", internalAuthMiddleware, deletePatientReport);

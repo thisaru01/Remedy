@@ -370,3 +370,142 @@ export const deletePatientReportService = async ({ user, params }) => {
     };
   }
 };
+
+// Update metadata for a patient report (title, description, appointmentId)
+export const updatePatientReportService = async ({ user, params, body }) => {
+  const role = user?.role;
+  if (role !== "patient") {
+    return {
+      status: 403,
+      body: {
+        success: false,
+        message: "Access denied",
+      },
+    };
+  }
+
+  const userId = user?.id;
+  if (!userId) {
+    return {
+      status: 400,
+      body: { success: false, message: "Missing user context" },
+    };
+  }
+
+  const reportId = params?.id;
+  if (!reportId) {
+    return {
+      status: 400,
+      body: { success: false, message: "Report id is required" },
+    };
+  }
+
+  const idError = validateReportIdFormat(reportId);
+  if (idError) return idError;
+
+  const titleRaw = body?.title;
+  const descriptionRaw = body?.description;
+  const appointmentIdRaw = body?.appointmentId;
+
+  const update = {};
+
+  if (titleRaw !== undefined) {
+    const title = (titleRaw || "").toString().trim();
+    if (!title) {
+      return {
+        status: 400,
+        body: { success: false, message: "Title is required" },
+      };
+    }
+    update.title = title;
+  }
+
+  if (descriptionRaw !== undefined) {
+    update.description =
+      typeof descriptionRaw === "string"
+        ? descriptionRaw.trim()
+        : descriptionRaw;
+  }
+
+  if (appointmentIdRaw !== undefined) {
+    const appointmentId = (appointmentIdRaw || "").toString().trim();
+    if (appointmentId) {
+      try {
+        const appointment = await fetchAppointmentByIdForUser(appointmentId, {
+          id: userId,
+          role,
+        });
+        if (!appointment) {
+          return {
+            status: 404,
+            body: { success: false, message: "Appointment not found" },
+          };
+        }
+
+        const isPatientOwner =
+          appointment.patientId &&
+          (appointment.patientId.toString
+            ? appointment.patientId.toString() === String(userId)
+            : String(appointment.patientId) === String(userId));
+
+        if (!isPatientOwner) {
+          return {
+            status: 403,
+            body: {
+              success: false,
+              message: "You can only attach reports to your own appointments",
+            },
+          };
+        }
+
+        update.appointmentId = appointmentId;
+      } catch (error) {
+        const status = error?.response?.status || 502;
+        const message =
+          error?.response?.data?.message || "Failed to validate appointment";
+        return { status, body: { success: false, message } };
+      }
+    } else {
+      // allow clearing appointmentId by sending empty string/null
+      update.appointmentId = null;
+    }
+  }
+
+  if (!Object.keys(update).length) {
+    return {
+      status: 400,
+      body: { success: false, message: "No updatable fields provided" },
+    };
+  }
+
+  try {
+    const report = await PatientReport.findById(reportId);
+    if (!report) {
+      return {
+        status: 404,
+        body: { success: false, message: "Report not found" },
+      };
+    }
+
+    if (String(report.userId) !== String(userId)) {
+      return {
+        status: 403,
+        body: { success: false, message: "Access denied" },
+      };
+    }
+
+    // Apply allowed updates
+    Object.keys(update).forEach((key) => {
+      report[key] = update[key];
+    });
+
+    await report.save();
+
+    return { status: 200, body: { success: true, data: report } };
+  } catch (error) {
+    return {
+      status: 400,
+      body: { success: false, message: "Invalid report id" },
+    };
+  }
+};

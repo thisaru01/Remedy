@@ -3,6 +3,7 @@ import {
   getMyPatientReportsService,
   getReportsForAppointmentService,
   deletePatientReportService,
+  updatePatientReportService,
 } from "../services/patientReportService.js";
 
 import {
@@ -81,4 +82,20 @@ export const deletePatientReport = async (req, res) => {
     params: req.params,
   });
   return res.status(status).json(body);
+};
+
+// Update a report's metadata (title, description, appointmentId)
+export const updatePatientReport = async (req, res) => {
+  try {
+    const { status, body } = await updatePatientReportService({
+      user: req.user,
+      params: req.params,
+      body: req.body,
+    });
+    return res.status(status).json(body);
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
