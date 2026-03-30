@@ -6,6 +6,8 @@ import {
   getApprovedDoctorProfilesBySpecialty,
   getDoctorProfilesByVerificationStatus,
   getOwnDoctorProfile,
+  approveDoctorVerification,
+  rejectDoctorVerification,
   submitOwnDoctorVerification,
   updateOwnDoctorProfile,
 } from "../controllers/doctorProfileController.js";
@@ -19,6 +21,16 @@ router.get(
   "/verified/specialty/:specialty",
   internalAuthMiddleware,
   getApprovedDoctorProfilesBySpecialty,
+);
+router.patch(
+  "/:id/verification/approve",
+  internalAuthMiddleware,
+  approveDoctorVerification,
+);
+router.patch(
+  "/:id/verification/reject",
+  internalAuthMiddleware,
+  rejectDoctorVerification,
 );
 router.get("/me", internalAuthMiddleware, getOwnDoctorProfile);
 router.put("/me", internalAuthMiddleware, updateOwnDoctorProfile);

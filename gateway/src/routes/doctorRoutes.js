@@ -15,6 +15,26 @@ export const createDoctorRoutes = ({ protect, proxyTo, services }) => {
     }),
   );
 
+  router.patch(
+    "/api/doctor-profiles/:id/verification/approve",
+    protect,
+    authorizeRoles("admin"),
+    proxyTo(services.doctor, {
+      addUserContext: true,
+      basePath: "/api/doctor-profiles",
+    }),
+  );
+
+  router.patch(
+    "/api/doctor-profiles/:id/verification/reject",
+    protect,
+    authorizeRoles("admin"),
+    proxyTo(services.doctor, {
+      addUserContext: true,
+      basePath: "/api/doctor-profiles",
+    }),
+  );
+
   router.use(
     "/api/doctor-profiles/verified",
     protect,

@@ -142,3 +142,39 @@ export const getDoctorProfilesByVerificationStatus = async (req, res, next) => {
     return next(error);
   }
 };
+
+export const approveDoctorVerification = async (req, res, next) => {
+  try {
+    const profile = await doctorProfileService.approveDoctorVerification({
+      user: req.user,
+      doctorUserId: req.params.id,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Doctor verification approved",
+      profile,
+    });
+  } catch (error) {
+    if (sendServiceError(res, error)) return;
+    return next(error);
+  }
+};
+
+export const rejectDoctorVerification = async (req, res, next) => {
+  try {
+    const profile = await doctorProfileService.rejectDoctorVerification({
+      user: req.user,
+      doctorUserId: req.params.id,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Doctor verification rejected",
+      profile,
+    });
+  } catch (error) {
+    if (sendServiceError(res, error)) return;
+    return next(error);
+  }
+};

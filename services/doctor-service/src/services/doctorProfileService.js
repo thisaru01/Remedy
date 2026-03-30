@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import DoctorProfile from "../models/doctorProfileModel.js";
 
 const doctorUpdatableFields = [
@@ -237,4 +238,78 @@ export const getDoctorProfilesByVerificationStatus = async ({
     verificationStatus,
     profiles,
   };
+};
+
+export const approveDoctorVerification = async ({ user, doctorUserId }) => {
+  const role = user?.role;
+
+  if (role !== "admin") {
+    throw createServiceError(403, "Access denied");
+  }
+
+  if (!doctorUserId) {
+    throw createServiceError(400, "doctorUserId is required");
+  }
+
+  if (!mongoose.isValidObjectId(doctorUserId)) {
+    throw createServiceError(400, "Invalid doctorUserId");
+  }
+
+  const profile = await DoctorProfile.findOne({ userId: doctorUserId });
+
+  if (!profile) {
+    throw createServiceError(404, "Doctor profile not found");
+  }
+
+  if (profile.verification?.status !== "submitted") {
+    throw createServiceError(
+      400,
+      "Only submitted verifications can be approved",
+    );
+  }
+
+  const updatedProfile = await DoctorProfile.findOneAndUpdate(
+    { userId: doctorUserId },
+    { $set: { "verification.status": "approved" } },
+    { new: true, runValidators: true },
+  );
+
+  return updatedProfile;
+};
+
+export const rejectDoctorVerification = async ({ user, doctorUserId }) => {
+  const role = user?.role;
+
+  if (role !== "admin") {
+    throw createServiceError(403, "Access denied");
+  }
+
+  if (!doctorUserId) {
+    throw createServiceError(400, "doctorUserId is required");
+  }
+
+  if (!mongoose.isValidObjectId(doctorUserId)) {
+    throw createServiceError(400, "Invalid doctorUserId");
+  }
+
+  const profile = await DoctorProfile.findOne({ userId: doctorUserId });
+
+  if (!profile) {
+    throw createServiceError(404, "Doctor profile not found");
+  }
+
+  if (profile.verification?.status !== "submitted") {
+    throw createServiceError(
+      400,
+      "Only submitted verifications can be rejected",
+    );
+  }
+
+  const updatedProfile = await DoctorProfile.findOneAndUpdate(
+    { userId: doctorUserId },
+    { $set: { "verification.status": "rejected" } },
+    { new: true, runValidators: true },
+  );
+
+  return updatedProfile;
 };
