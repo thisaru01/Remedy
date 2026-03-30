@@ -30,11 +30,12 @@ export const createAppointment = async (req, res, next) => {
 
 export const getAppointments = async (req, res, next) => {
   try {
-    const { patientId, doctorId } = req.query;
+    const { patientId, doctorId, status } = req.query;
     const filter = {};
 
     if (patientId) filter.patientId = patientId;
     if (doctorId) filter.doctorId = doctorId;
+    if (status) filter.status = status;
 
     // If requester is a patient or doctor, restrict to their own appointments
     if (req.user && req.user.role === "patient") {
