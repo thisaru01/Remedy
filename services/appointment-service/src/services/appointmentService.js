@@ -109,33 +109,13 @@ export const createAppointment = async (data) => {
   }
 
   const schedule = await ensureScheduleIsBookable(scheduleId);
-  // appointmentNumber may be provided; if not, generate an atomic incremental value
-  let finalAppointmentNumber = appointmentNumber;
-
-  if (!finalAppointmentNumber) {
-    const counters = mongoose.connection.collection("counters");
-    const res = await counters.findOneAndUpdate(
-      { _id: "appointmentNumber" },
-      { $inc: { seq: 1 } },
-      { upsert: true, returnDocument: "after" },
-    );
-    const seq = res.value && res.value.seq ? res.value.seq : 1;
-    finalAppointmentNumber = `APPT-${String(seq).padStart(6, "0")}`;
-  } else {
-    // if client provided appointmentNumber, ensure uniqueness
-    const existing = await Appointment.findOne({ appointmentNumber: finalAppointmentNumber });
-    if (existing) {
-      const err = new Error("appointmentNumber already exists");
-      err.statusCode = 409;
-      throw err;
-    }
-  }
-
   const appointment = await Appointment.create({
     patientId,
     doctorId,
     scheduleId,
-    appointmentNumber: finalAppointmentNumber,
+    // Use whatever appointmentNumber was provided by the client.
+    // The schema still requires it, but it is no longer unique.
+    appointmentNumber,
     status: status || undefined,
     // let model default paymentStatus when not provided
     paymentStatus: paymentStatus || undefined,
