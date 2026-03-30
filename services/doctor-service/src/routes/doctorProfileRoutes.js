@@ -4,6 +4,7 @@ import {
   createDoctorProfile,
   getApprovedDoctorProfiles,
   getApprovedDoctorProfilesBySpecialty,
+  getDoctorProfilesByVerificationStatus,
   getOwnDoctorProfile,
   submitOwnDoctorVerification,
   updateOwnDoctorProfile,
@@ -12,6 +13,7 @@ import {
 const router = express.Router();
 
 router.post("/", internalAuthMiddleware, createDoctorProfile);
+router.get("/", internalAuthMiddleware, getDoctorProfilesByVerificationStatus);
 router.get("/verified", internalAuthMiddleware, getApprovedDoctorProfiles);
 router.get(
   "/verified/specialty/:specialty",

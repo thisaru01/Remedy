@@ -200,3 +200,41 @@ export const getApprovedDoctorProfilesBySpecialty = async ({ specialty }) => {
     profiles,
   };
 };
+
+const allowedVerificationStatuses = [
+  "not_submitted",
+  "submitted",
+  "approved",
+  "rejected",
+];
+
+export const getDoctorProfilesByVerificationStatus = async ({
+  user,
+  verificationStatus,
+}) => {
+  const role = user?.role;
+
+  if (role !== "admin") {
+    throw createServiceError(403, "Access denied");
+  }
+
+  if (!verificationStatus) {
+    throw createServiceError(400, "verificationStatus is required");
+  }
+
+  if (!allowedVerificationStatuses.includes(verificationStatus)) {
+    throw createServiceError(
+      400,
+      "Invalid verificationStatus. Allowed values: not_submitted, submitted, approved, rejected",
+    );
+  }
+
+  const profiles = await DoctorProfile.find({
+    "verification.status": verificationStatus,
+  }).sort({ updatedAt: -1 });
+
+  return {
+    verificationStatus,
+    profiles,
+  };
+};
