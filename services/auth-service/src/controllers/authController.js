@@ -3,10 +3,12 @@ import {
   loginUser,
   updateUserStatusService,
   getUsersService,
+  changeMyPasswordService,
 } from "../services/authService.js";
 import {
   validateLoginInput,
   validateRegisterInput,
+  validateChangePasswordInput,
 } from "../validation/authValidation.js";
 
 // Register
@@ -57,6 +59,29 @@ export const getUsers = async (req, res, next) => {
   try {
     const { status, role } = req.query ?? {};
     const result = await getUsersService({ status, role });
+    return res.status(result.status).json(result.body);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Change password for the currently authenticated user
+export const changeMyPassword = async (req, res, next) => {
+  try {
+    const validationError = validateChangePasswordInput(req.body);
+    if (validationError) {
+      return res.status(validationError.status).json(validationError.body);
+    }
+
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user?.id;
+
+    const result = await changeMyPasswordService({
+      userId,
+      currentPassword,
+      newPassword,
+    });
+
     return res.status(result.status).json(result.body);
   } catch (error) {
     next(error);

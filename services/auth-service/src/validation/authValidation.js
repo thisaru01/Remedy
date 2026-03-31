@@ -3,6 +3,33 @@ import mongoose from "mongoose";
 export const USER_STATUSES = ["active", "inactive"];
 export const USER_ROLES = ["patient", "doctor", "admin"];
 
+const passwordPolicyRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+
+export const validatePasswordComplexity = (password) => {
+  if (typeof password !== "string") {
+    return {
+      status: 400,
+      body: {
+        success: false,
+        message: "password must be a string",
+      },
+    };
+  }
+
+  if (!passwordPolicyRegex.test(password)) {
+    return {
+      status: 400,
+      body: {
+        success: false,
+        message:
+          "Password must be at least 8 characters long and include at least one letter, one number, and one special character",
+      },
+    };
+  }
+
+  return null;
+};
+
 export const validateRegisterInput = (body) => {
   const { name, email, password, role } = body ?? {};
 
@@ -26,26 +53,9 @@ export const validateRegisterInput = (body) => {
     };
   }
 
-  if (typeof password !== "string") {
-    return {
-      status: 400,
-      body: {
-        success: false,
-        message: "password must be a string",
-      },
-    };
-  }
-
-  const passwordPolicyRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
-  if (!passwordPolicyRegex.test(password)) {
-    return {
-      status: 400,
-      body: {
-        success: false,
-        message:
-          "Password must be at least 8 characters long and include at least one letter, one number, and one special character",
-      },
-    };
+  const passwordError = validatePasswordComplexity(password);
+  if (passwordError) {
+    return passwordError;
   }
 
   if (role !== undefined && !USER_ROLES.includes(role)) {
@@ -72,6 +82,37 @@ export const validateLoginInput = (body) => {
         message: "email and password are required",
       },
     };
+  }
+
+  return null;
+};
+
+export const validateChangePasswordInput = (body) => {
+  const { currentPassword, newPassword, confirmNewPassword } = body ?? {};
+
+  if (!currentPassword || !newPassword) {
+    return {
+      status: 400,
+      body: {
+        success: false,
+        message: "currentPassword and newPassword are required",
+      },
+    };
+  }
+
+  if (confirmNewPassword !== undefined && newPassword !== confirmNewPassword) {
+    return {
+      status: 400,
+      body: {
+        success: false,
+        message: "confirmNewPassword must match newPassword",
+      },
+    };
+  }
+
+  const passwordError = validatePasswordComplexity(newPassword);
+  if (passwordError) {
+    return passwordError;
   }
 
   return null;

@@ -215,6 +215,50 @@ export const loginUser = async ({ email, password }) => {
   };
 };
 
+// Change password for the authenticated user
+export const changeMyPasswordService = async ({
+  userId,
+  currentPassword,
+  newPassword,
+}) => {
+  const user = await User.findById(userId).select("+password");
+
+  if (!user) {
+    return {
+      status: 404,
+      body: {
+        success: false,
+        message: "User not found",
+      },
+    };
+  }
+
+  const isMatch = await user.comparePassword(currentPassword);
+  if (!isMatch) {
+    return {
+      status: 400,
+      body: {
+        success: false,
+        message: "Current password is incorrect",
+      },
+    };
+  }
+
+  user.password = newPassword;
+  await user.save();
+
+  const token = generateToken(user);
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+      message: "Password updated successfully",
+      token,
+    },
+  };
+};
+
 // Update the status (active/inactive) of a user
 export const updateUserStatusService = async ({ userId, status }) => {
   const validationError = validateUpdateUserStatusInput({ userId, status });
