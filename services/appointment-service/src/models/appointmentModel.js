@@ -40,4 +40,6 @@ const appointmentSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+appointmentSchema.index({ scheduleId: 1, appointmentNumber: 1 }, { unique: true });
+
 export default mongoose.model("Appointment", appointmentSchema);

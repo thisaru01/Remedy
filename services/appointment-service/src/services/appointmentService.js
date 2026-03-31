@@ -80,11 +80,29 @@ const updateScheduleSlotCountFromAppointment = async (
   }
 };
 
+const generateAppointmentNumber = (schedule) => {
+  const rawSlotCount = Number.isInteger(schedule.slotCount)
+    ? schedule.slotCount
+    : 6;
+
+  // Map current slotCount (6..1) to appointment number (1..6)
+  // 6 -> 1, 5 -> 2, 4 -> 3, 3 -> 4, 2 -> 5, 1 -> 6
+  const mappedNumber = Math.min(Math.max(7 - rawSlotCount, 1), 6);
+
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  const datePart = `${month}/${day}`;
+
+  const numberPart = String(mappedNumber).padStart(2, "0");
+
+  return `APPT_${numberPart}_${datePart}`;
+};
+
 export const createAppointment = async (data) => {
   const {
     patientId,
     doctorId,
-    appointmentNumber,
     scheduleId,
     status,
     paymentStatus,
@@ -109,12 +127,11 @@ export const createAppointment = async (data) => {
   }
 
   const schedule = await ensureScheduleIsBookable(scheduleId);
+  const appointmentNumber = generateAppointmentNumber(schedule);
   const appointment = await Appointment.create({
     patientId,
     doctorId,
     scheduleId,
-    // Use whatever appointmentNumber was provided by the client.
-    // The schema still requires it, but it is no longer unique.
     appointmentNumber,
     status: status || undefined,
     // let model default paymentStatus when not provided
