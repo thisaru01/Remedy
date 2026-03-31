@@ -264,6 +264,30 @@ export const rejectAppointment = async (id, requester) => {
   appointment.status = "rejected";
   await appointment.save();
 
+  // When a pending appointment is rejected by the doctor, increase the
+  // schedule's remaining slot count by 1.
+  if (appointment.scheduleId) {
+    try {
+      const response = await axios.get(
+        `${DOCTOR_SERVICE_BASE_URL}/api/doctor-schedules/schedule/${appointment.scheduleId}`,
+      );
+
+      const schedule = response.data?.schedule || response.data;
+      if (schedule && Number.isInteger(schedule.slotCount)) {
+        await updateScheduleSlotCountFromAppointment(
+          appointment.scheduleId,
+          schedule.slotCount + 1,
+        );
+      }
+    } catch (error) {
+      // Do not fail the rejection if this internal update fails.
+      console.error("Failed to increase schedule slotCount on rejection", {
+        scheduleId: appointment.scheduleId,
+        error: error?.message,
+      });
+    }
+  }
+
   return appointment;
 };
 
