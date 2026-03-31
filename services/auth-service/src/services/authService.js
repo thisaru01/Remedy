@@ -1,10 +1,12 @@
 import jwt from "jsonwebtoken";
 import axios from "axios";
-import mongoose from "mongoose";
 import User from "../models/userModel.js";
-
-const USER_STATUSES = ["active", "inactive"];
-const USER_ROLES = ["patient", "doctor", "admin"];
+import {
+  USER_ROLES,
+  USER_STATUSES,
+  validateGetUsersFilters,
+  validateUpdateUserStatusInput,
+} from "../validation/authValidation.js";
 
 // Generate a JWT for the given user
 const generateToken = (user) => {
@@ -215,25 +217,9 @@ export const loginUser = async ({ email, password }) => {
 
 // Update the status (active/inactive) of a user
 export const updateUserStatusService = async ({ userId, status }) => {
-  if (!mongoose.Types.ObjectId.isValid(userId)) {
-    return {
-      status: 400,
-      body: {
-        success: false,
-        message: "Invalid user id",
-      },
-    };
-  }
-
-  const allowedStatuses = ["active", "inactive"];
-  if (!status || !allowedStatuses.includes(status)) {
-    return {
-      status: 400,
-      body: {
-        success: false,
-        message: `Invalid status. Must be one of: ${allowedStatuses.join(", ")}`,
-      },
-    };
+  const validationError = validateUpdateUserStatusInput({ userId, status });
+  if (validationError) {
+    return validationError;
   }
 
   const updatedUser = await User.findByIdAndUpdate(
@@ -272,29 +258,16 @@ export const updateUserStatusService = async ({ userId, status }) => {
 export const getUsersService = async ({ status, role }) => {
   const filter = {};
 
+  const validationError = validateGetUsersFilters({ status, role });
+  if (validationError) {
+    return validationError;
+  }
+
   if (status !== undefined) {
-    if (!USER_STATUSES.includes(status)) {
-      return {
-        status: 400,
-        body: {
-          success: false,
-          message: `Invalid status. Must be one of: ${USER_STATUSES.join(", ")}`,
-        },
-      };
-    }
     filter.status = status;
   }
 
   if (role !== undefined) {
-    if (!USER_ROLES.includes(role)) {
-      return {
-        status: 400,
-        body: {
-          success: false,
-          message: `Invalid role. Must be one of: ${USER_ROLES.join(", ")}`,
-        },
-      };
-    }
     filter.role = role;
   }
 

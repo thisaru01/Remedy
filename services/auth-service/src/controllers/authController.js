@@ -4,10 +4,19 @@ import {
   updateUserStatusService,
   getUsersService,
 } from "../services/authService.js";
+import {
+  validateLoginInput,
+  validateRegisterInput,
+} from "../validation/authValidation.js";
 
 // Register
 export const register = async (req, res, next) => {
   try {
+    const validationError = validateRegisterInput(req.body);
+    if (validationError) {
+      return res.status(validationError.status).json(validationError.body);
+    }
+
     const result = await registerUser(req.body);
     return res.status(result.status).json(result.body);
   } catch (error) {
@@ -18,6 +27,11 @@ export const register = async (req, res, next) => {
 // Login
 export const login = async (req, res, next) => {
   try {
+    const validationError = validateLoginInput(req.body);
+    if (validationError) {
+      return res.status(validationError.status).json(validationError.body);
+    }
+
     const result = await loginUser(req.body);
     return res.status(result.status).json(result.body);
   } catch (error) {
