@@ -398,6 +398,59 @@ export const rescheduleAppointment = async (id, requester, data) => {
   return appointment;
 };
 
+export const updatePaymentStatus = async (id, requester, paymentStatus) => {
+  if (!requester) {
+    const err = new Error("Not authorized");
+    err.statusCode = 401;
+    throw err;
+  }
+
+  // Only patients and admins may update payment status via API
+  if (requester.role !== "patient" && requester.role !== "admin") {
+    const err = new Error("Only patients or admins can update payment status");
+    err.statusCode = 403;
+    throw err;
+  }
+
+  const appointment = await Appointment.findById(id);
+  if (!appointment) {
+    const err = new Error("Appointment not found");
+    err.statusCode = 404;
+    throw err;
+  }
+
+  // If patient requester, ensure they own the appointment
+  if (requester.role === "patient") {
+    const userId = requester.id;
+    const isPatientOwner =
+      appointment.patientId && appointment.patientId.toString() === userId;
+    if (!isPatientOwner) {
+      const err = new Error("You can only update payment for your own appointments");
+      err.statusCode = 403;
+      throw err;
+    }
+  }
+
+  const allowed = ["pending", "success", "failed"];
+  if (!allowed.includes(paymentStatus)) {
+    const err = new Error(`paymentStatus must be one of: ${allowed.join(", ")}`);
+    err.statusCode = 400;
+    throw err;
+  }
+
+  // Business rule: payment can be marked success or failed only when appointment is accepted
+  if (["success", "failed"].includes(paymentStatus) && appointment.status !== "accepted") {
+    const err = new Error("Payment can be 'success' or 'failed' only for accepted appointments");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  appointment.paymentStatus = paymentStatus;
+  await appointment.save();
+
+  return appointment;
+};
+
 export const completeAppointment = async (id, requester) => {
   if (!requester || requester.role !== "doctor") {
     const err = new Error("Only doctors can mark appointments as completed");
@@ -483,6 +536,7 @@ export default {
   rejectAppointment,
   cancelAppointment,
   rescheduleAppointment,
+  updatePaymentStatus,
   completeAppointment,
   deleteAppointment,
 };
