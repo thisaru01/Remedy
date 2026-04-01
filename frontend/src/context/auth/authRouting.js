@@ -3,7 +3,7 @@ export function getDashboardPathForRole(role) {
     case "patient":
       return "/patient";
     case "doctor":
-      return "/";
+      return "/doctor";
     case "admin":
       return "/admin";
     default:

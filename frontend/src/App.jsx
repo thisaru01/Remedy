@@ -14,6 +14,15 @@ import PatientAppointments from "@/patients/pages/PatientAppointments.jsx";
 import PatientReports from "@/patients/pages/PatientReports.jsx";
 import PatientPrescriptions from "@/patients/pages/PatientPrescriptions.jsx";
 
+// Doctor
+import DoctorRouteLayout from "./doctors/DoctorRouteLayout.jsx";
+import DoctorDashboard from "@/doctors/pages/DoctorDashboard.jsx";
+import DoctorProfile from "@/doctors/pages/DoctorProfile.jsx";
+import DoctorAppointments from "@/doctors/pages/DoctorAppointments.jsx";
+import DoctorPatientReports from "@/doctors/pages/DoctorPatientReports.jsx";
+import DoctorScheduleCreate from "@/doctors/pages/DoctorScheduleCreate.jsx";
+import DoctorScheduleManage from "@/doctors/pages/DoctorScheduleManage.jsx";
+
 // Public
 import Home from "@/public/Home.jsx";
 import AuthPage from "@/public/AuthPage.jsx";
@@ -44,6 +53,20 @@ export default function App() {
             <Route path=":type" element={<PatientReports />} />
           </Route>
           <Route path="prescriptions" element={<PatientPrescriptions />} />
+          <Route path="*" element={<Navigate to="." replace />} />
+        </Route>
+
+        <Route path="/doctor" element={<DoctorRouteLayout />}>
+          <Route index element={<DoctorDashboard />} />
+          <Route path="profile" element={<DoctorProfile />} />
+          <Route path="appointments">
+            <Route path=":status" element={<DoctorAppointments />} />
+          </Route>
+          <Route path="patient-reports" element={<DoctorPatientReports />} />
+          <Route path="schedule">
+            <Route path="create" element={<DoctorScheduleCreate />} />
+            <Route path="manage" element={<DoctorScheduleManage />} />
+          </Route>
           <Route path="*" element={<Navigate to="." replace />} />
         </Route>
       </Routes>
