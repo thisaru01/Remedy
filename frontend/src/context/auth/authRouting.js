@@ -1,9 +1,9 @@
 export function getDashboardPathForRole(role) {
   switch (role) {
     case "patient":
-      return "/";
+      return "/patient";
     case "doctor":
-      return "/";
+      return "/doctor";
     case "admin":
       return "/admin";
     default:
