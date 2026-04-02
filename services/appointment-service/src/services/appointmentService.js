@@ -80,21 +80,25 @@ const updateScheduleSlotCountFromAppointment = async (
   }
 };
 
-const generateAppointmentNumber = (schedule) => {
-  const rawSlotCount = Number.isInteger(schedule.slotCount)
-    ? schedule.slotCount
-    : 6;
+const generateAppointmentNumber = async (scheduleId) => {
+  // Use current day's appointment count for this schedule to derive a
+  // sequential number (01, 02, ...), instead of relying on schedule.slotCount.
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date(startOfDay);
+  endOfDay.setDate(endOfDay.getDate() + 1);
 
-  // Map current slotCount (6..1) to appointment number (1..6)
-  // 6 -> 1, 5 -> 2, 4 -> 3, 3 -> 4, 2 -> 5, 1 -> 6
-  const mappedNumber = Math.min(Math.max(7 - rawSlotCount, 1), 6);
+  const existingCount = await Appointment.countDocuments({
+    scheduleId,
+    createdAt: { $gte: startOfDay, $lt: endOfDay },
+  });
 
   const now = new Date();
   const month = String(now.getMonth() + 1).padStart(2, "0");
   const day = String(now.getDate()).padStart(2, "0");
   const datePart = `${month}/${day}`;
 
-  const numberPart = String(mappedNumber).padStart(2, "0");
+  const numberPart = String(existingCount + 1).padStart(2, "0");
 
   return `APPT_${numberPart}_${datePart}`;
 };
@@ -127,7 +131,7 @@ export const createAppointment = async (data) => {
   }
 
   const schedule = await ensureScheduleIsBookable(scheduleId);
-  const appointmentNumber = generateAppointmentNumber(schedule);
+  const appointmentNumber = await generateAppointmentNumber(scheduleId);
   const appointment = await Appointment.create({
     patientId,
     doctorId,
