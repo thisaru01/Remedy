@@ -80,21 +80,25 @@ const updateScheduleSlotCountFromAppointment = async (
   }
 };
 
-const generateAppointmentNumber = (schedule) => {
-  const rawSlotCount = Number.isInteger(schedule.slotCount)
-    ? schedule.slotCount
-    : 6;
+const generateAppointmentNumber = async (scheduleId) => {
+  // Use current day's appointment count for this schedule to derive a
+  // sequential number (01, 02, ...), instead of relying on schedule.slotCount.
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date(startOfDay);
+  endOfDay.setDate(endOfDay.getDate() + 1);
 
-  // Map current slotCount (6..1) to appointment number (1..6)
-  // 6 -> 1, 5 -> 2, 4 -> 3, 3 -> 4, 2 -> 5, 1 -> 6
-  const mappedNumber = Math.min(Math.max(7 - rawSlotCount, 1), 6);
+  const existingCount = await Appointment.countDocuments({
+    scheduleId,
+    createdAt: { $gte: startOfDay, $lt: endOfDay },
+  });
 
   const now = new Date();
   const month = String(now.getMonth() + 1).padStart(2, "0");
   const day = String(now.getDate()).padStart(2, "0");
   const datePart = `${month}/${day}`;
 
-  const numberPart = String(mappedNumber).padStart(2, "0");
+  const numberPart = String(existingCount + 1).padStart(2, "0");
 
   return `APPT_${numberPart}_${datePart}`;
 };
@@ -127,7 +131,7 @@ export const createAppointment = async (data) => {
   }
 
   const schedule = await ensureScheduleIsBookable(scheduleId);
-  const appointmentNumber = generateAppointmentNumber(schedule);
+  const appointmentNumber = await generateAppointmentNumber(scheduleId);
   const appointment = await Appointment.create({
     patientId,
     doctorId,
@@ -398,6 +402,59 @@ export const rescheduleAppointment = async (id, requester, data) => {
   return appointment;
 };
 
+export const updatePaymentStatus = async (id, requester, paymentStatus) => {
+  if (!requester) {
+    const err = new Error("Not authorized");
+    err.statusCode = 401;
+    throw err;
+  }
+
+  // Only patients and admins may update payment status via API
+  if (requester.role !== "patient" && requester.role !== "admin") {
+    const err = new Error("Only patients or admins can update payment status");
+    err.statusCode = 403;
+    throw err;
+  }
+
+  const appointment = await Appointment.findById(id);
+  if (!appointment) {
+    const err = new Error("Appointment not found");
+    err.statusCode = 404;
+    throw err;
+  }
+
+  // If patient requester, ensure they own the appointment
+  if (requester.role === "patient") {
+    const userId = requester.id;
+    const isPatientOwner =
+      appointment.patientId && appointment.patientId.toString() === userId;
+    if (!isPatientOwner) {
+      const err = new Error("You can only update payment for your own appointments");
+      err.statusCode = 403;
+      throw err;
+    }
+  }
+
+  const allowed = ["pending", "success", "failed"];
+  if (!allowed.includes(paymentStatus)) {
+    const err = new Error(`paymentStatus must be one of: ${allowed.join(", ")}`);
+    err.statusCode = 400;
+    throw err;
+  }
+
+  // Business rule: payment can be marked success or failed only when appointment is accepted
+  if (["success", "failed"].includes(paymentStatus) && appointment.status !== "accepted") {
+    const err = new Error("Payment can be 'success' or 'failed' only for accepted appointments");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  appointment.paymentStatus = paymentStatus;
+  await appointment.save();
+
+  return appointment;
+};
+
 export const completeAppointment = async (id, requester) => {
   if (!requester || requester.role !== "doctor") {
     const err = new Error("Only doctors can mark appointments as completed");
@@ -483,6 +540,7 @@ export default {
   rejectAppointment,
   cancelAppointment,
   rescheduleAppointment,
+  updatePaymentStatus,
   completeAppointment,
   deleteAppointment,
 };
