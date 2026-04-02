@@ -21,6 +21,9 @@ const patientProfileSchema = new mongoose.Schema(
     address: {
       type: String,
     },
+    medicalHistory: {
+      type: String,
+    },
   },
   { timestamps: true },
 );

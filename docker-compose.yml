@@ -1,0 +1,125 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      target: dev
+    container_name: remedy-frontend
+    restart: unless-stopped
+    environment:
+      VITE_API_BASE_URL: http://localhost:8080/api
+    depends_on:
+      - gateway
+    ports:
+      - "5173:5173"
+
+  gateway:
+    build:
+      context: ./gateway
+    container_name: remedy-gateway
+    restart: unless-stopped
+    environment:
+      PORT: 8080
+      JWT_SECRET: ${JWT_SECRET:-dev_jwt_secret_change_me}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-dev_internal_token_change_me}
+      AUTH_SERVICE_URL: http://auth-service:5000
+      PATIENT_SERVICE_URL: http://patient-service:5000
+      DOCTOR_SERVICE_URL: http://doctor-service:5000
+      APPOINTMENT_SERVICE_URL: http://appointment-service:5000
+      TELEMEDICINE_SERVICE_URL: http://telemedicine-service:5000
+    depends_on:
+      - auth-service
+      - patient-service
+      - doctor-service
+      - appointment-service
+      - telemedicine-service
+    ports:
+      - "8080:8080"
+
+  auth-service:
+    build:
+      context: ./services/auth-service
+    container_name: remedy-auth-service
+    restart: unless-stopped
+    environment:
+      PORT: 5000
+      MONGO_URI: ${AUTH_MONGO_URI:?AUTH_MONGO_URI is required}
+      JWT_SECRET: ${JWT_SECRET:-dev_jwt_secret_change_me}
+      JWT_EXPIRE: ${JWT_EXPIRE:-1d}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-dev_internal_token_change_me}
+      PATIENT_SERVICE_URL: http://patient-service:5000
+      DOCTOR_SERVICE_URL: http://doctor-service:5000
+    depends_on:
+      - patient-service
+      - doctor-service
+    ports:
+      - "5000:5000"
+
+  patient-service:
+    build:
+      context: ./services/patient-service
+    container_name: remedy-patient-service
+    restart: unless-stopped
+    environment:
+      PORT: 5000
+      MONGO_URI: ${PATIENT_MONGO_URI:?PATIENT_MONGO_URI is required}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-dev_internal_token_change_me}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:?CLOUDINARY_CLOUD_NAME is required}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:?CLOUDINARY_API_KEY is required}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:?CLOUDINARY_API_SECRET is required}
+    ports:
+      - "5001:5000"
+
+  doctor-service:
+    build:
+      context: ./services/doctor-service
+    container_name: remedy-doctor-service
+    restart: unless-stopped
+    environment:
+      PORT: 5000
+      MONGO_URI: ${DOCTOR_MONGO_URI:?DOCTOR_MONGO_URI is required}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-dev_internal_token_change_me}
+    ports:
+      - "5002:5000"
+
+  appointment-service:
+    build:
+      context: ./services/appointment-service
+    container_name: remedy-appointment-service
+    restart: unless-stopped
+    environment:
+      PORT: 5000
+      MONGO_URI: ${APPOINTMENT_MONGO_URI:?APPOINTMENT_MONGO_URI is required}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-dev_internal_token_change_me}
+      DOCTOR_SERVICE_URL: ${DOCTOR_SERVICE_URL:-http://doctor-service:5000}
+    ports:
+      - "5003:5000"
+
+  telemedicine-service:
+    build:
+      context: ./services/telemedicine-service
+    container_name: remedy-telemedicine-service
+    restart: unless-stopped
+    environment:
+      PORT: 5000
+      MONGO_URI: ${TELEMEDICINE_MONGO_URI:?TELEMEDICINE_MONGO_URI is required}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-dev_internal_token_change_me}
+      JAAS_TOKEN_EXPIRES_IN: ${JAAS_TOKEN_EXPIRES_IN:-365d}
+      SKIP_APPOINTMENT_VALIDATION: ${SKIP_APPOINTMENT_VALIDATION:-true}
+      JAAS_ENABLED: ${JAAS_ENABLED:-false}
+      JAAS_DOMAIN: ${JAAS_DOMAIN:-8x8.vc}
+      JAAS_APP_ID: ${JAAS_APP_ID}
+      JAAS_KEY_ID: ${JAAS_KEY_ID}
+      JAAS_PRIVATE_KEY: ${JAAS_PRIVATE_KEY}
+    ports:
+      - "5004:5000"
+
+  admin-service:
+    build:
+      context: ./services/admin-service
+    container_name: remedy-admin-service
+    restart: unless-stopped
+    environment:
+      PORT: 5000
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-dev_internal_token_change_me}
+    ports:
+      - "5005:5000"

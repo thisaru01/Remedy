@@ -1,37 +1,62 @@
-import PatientProfile from "../models/patientProfileModel.js";
+import {
+  createPatientProfileService,
+  updatePatientProfileService,
+  updateMyPatientProfileService,
+  getMyPatientProfileService,
+  getPatientProfileByUserIdService,
+} from "../services/patientProfileService.js";
 
+// Handle create/upsert of a patient profile
 export const createPatientProfile = async (req, res, next) => {
   try {
-    const { userId, dateOfBirth, gender, phone, address } = req.body;
+    const { status, body } = await createPatientProfileService(req.body);
+    return res.status(status).json(body);
+  } catch (error) {
+    return next(error);
+  }
+};
 
-    if (!userId) {
-      return res.status(400).json({
-        success: false,
-        message: "userId is required",
-      });
-    }
+// Handle updating a patient profile by userId
+export const updatePatientProfile = async (req, res, next) => {
+  try {
+    const { status, body } = await updatePatientProfileService(req.body);
+    return res.status(status).json(body);
+  } catch (error) {
+    return next(error);
+  }
+};
 
-    const set = {};
-    if (dateOfBirth !== undefined) set.dateOfBirth = dateOfBirth;
-    if (gender !== undefined) set.gender = gender;
-    if (phone !== undefined) set.phone = phone;
-    if (address !== undefined) set.address = address;
-
-    const update = {
-      $setOnInsert: { userId },
-      ...(Object.keys(set).length ? { $set: set } : {}),
-    };
-
-    const profile = await PatientProfile.findOneAndUpdate({ userId }, update, {
-      upsert: true,
-      new: true,
-      runValidators: true,
+// Handle updating the authenticated patient's own profile
+export const updateMyPatientProfile = async (req, res, next) => {
+  try {
+    const { status, body } = await updateMyPatientProfileService({
+      user: req.user,
+      body: req.body,
     });
+    return res.status(status).json(body);
+  } catch (error) {
+    return next(error);
+  }
+};
 
-    return res.status(201).json({
-      success: true,
-      profile,
+// Handle fetching the authenticated patient's own profile
+export const getMyPatientProfile = async (req, res, next) => {
+  try {
+    const { status, body } = await getMyPatientProfileService(req.user);
+    return res.status(status).json(body);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// Handle fetching a patient's profile by user id (doctor/admin)
+export const getPatientProfileByUserId = async (req, res, next) => {
+  try {
+    const { status, body } = await getPatientProfileByUserIdService({
+      user: req.user,
+      params: req.params,
     });
+    return res.status(status).json(body);
   } catch (error) {
     return next(error);
   }
