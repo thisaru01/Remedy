@@ -16,6 +16,7 @@ export const loadConfig = () => {
       patient: requireEnv("PATIENT_SERVICE_URL"),
       doctor: requireEnv("DOCTOR_SERVICE_URL"),
       appointment: requireEnv("APPOINTMENT_SERVICE_URL"),
+      payment: requireEnv("PAYMENT_SERVICE_URL"),
       telemedicine: requireEnv("TELEMEDICINE_SERVICE_URL"),
     },
   };
