@@ -4,6 +4,8 @@ import cors from "cors";
 import morgan from "morgan";
 import connectDB from "./src/config/db.js";
 import doctorProfileRoutes from "./src/routes/doctorProfileRoutes.js";
+import doctorScheduleRoutes from "./src/routes/doctorScheduleRoutes.js";
+import { startScheduleSlotResetJob } from "./src/services/scheduleSlotResetJob.js";
 
 dotenv.config();
 
@@ -19,6 +21,7 @@ connectDB();
 
 // Routes
 app.use("/api/doctor-profiles", doctorProfileRoutes);
+app.use("/api/doctor-schedules", doctorScheduleRoutes);
 
 // Test route
 app.get("/api/health", (req, res) => {
@@ -28,4 +31,7 @@ app.get("/api/health", (req, res) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  // Start background job that resets schedule slotCount to 6
+  // when a new schedule day arrives.
+  startScheduleSlotResetJob();
 });
