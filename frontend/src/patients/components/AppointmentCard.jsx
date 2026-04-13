@@ -1,6 +1,9 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { useEffect, useState } from "react";
 import { getSchedule } from "@/api/services/scheduleService";
 
@@ -59,6 +62,9 @@ function formatDoctorSpecialty(appt) {
 export default function AppointmentCard({ appt, action = "cancel" }) {
   const [schedule, setSchedule] = useState(null);
   const [loadingSchedule, setLoadingSchedule] = useState(false);
+  const [rescheduleOpen, setRescheduleOpen] = useState(false);
+  const [selectedDoctor, setSelectedDoctor] = useState("");
+  const [selectedSchedule, setSelectedSchedule] = useState("");
 
   useEffect(() => {
     let mounted = true;
@@ -83,6 +89,7 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
   }, [appt?.scheduleId]);
 
   return (
+    <>
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between gap-4">
@@ -126,6 +133,24 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
               <Button variant="destructive" size="sm" type="button">Delete</Button>
             ) : appt?.status === "completed" || appt?.paymentStatus === "success" ? (
               <CheckCircle size={20} className="text-sky-600" />
+            ) : appt?.status === "pending" ? (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  type="button"
+                  onClick={() => {
+                    // preselect current values
+                    const docVal = (typeof appt?.doctorId === "string" && appt.doctorId) || (typeof appt?.doctor === "object" && appt.doctor?._id) || "";
+                    setSelectedDoctor(docVal);
+                    setSelectedSchedule(appt?.scheduleId || "");
+                    setRescheduleOpen(true);
+                  }}
+                >
+                  Reschedule
+                </Button>
+                <Button variant="destructive" size="sm" type="button">Cancel</Button>
+              </div>
             ) : (
               <Button variant="destructive" size="sm" type="button">Cancel</Button>
             )}
@@ -133,5 +158,51 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
         </div>
       </div>
     </Card>
+
+    <Dialog open={rescheduleOpen} onOpenChange={setRescheduleOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Reschedule Appointment</DialogTitle>
+        </DialogHeader>
+        <div className="px-2 mt-4 space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor={`doctor-${appt._id}`}>Doctor</Label>
+            <Select value={selectedDoctor} onValueChange={setSelectedDoctor}>
+              <SelectTrigger id={`doctor-${appt._id}`} className="w-full">
+                <SelectValue placeholder="Select doctor" />
+              </SelectTrigger>
+              <SelectContent>
+                {/* show current appointment doctor as an option */}
+                {(typeof appt?.doctorId === "string" || typeof appt?.doctor === "object") && (
+                  <SelectItem value={(typeof appt?.doctorId === "string" && appt.doctorId) || (typeof appt?.doctor === "object" && appt.doctor?._id) || ""}>
+                    {formatDoctorDisplay(appt)}
+                  </SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor={`schedule-${appt._id}`}>Schedule</Label>
+            <Select value={selectedSchedule} onValueChange={setSelectedSchedule}>
+              <SelectTrigger id={`schedule-${appt._id}`} className="w-full">
+                <SelectValue placeholder="Select schedule" />
+              </SelectTrigger>
+              <SelectContent>
+                {schedule && (
+                  <SelectItem value={appt.scheduleId}>
+                    {schedule.day} · {schedule.startTime}{schedule.endTime ? ` - ${schedule.endTime}` : ""}
+                  </SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <div />
+          <Button size="sm" onClick={() => setRescheduleOpen(false)}>Close</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
