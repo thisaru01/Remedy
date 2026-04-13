@@ -121,6 +121,8 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
           <div>
             {action === "pay" ? (
               <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" size="sm" type="button">Pay Now</Button>
+            ) : action === "delete" ? (
+              <Button variant="destructive" size="sm" type="button">Delete</Button>
             ) : (
               <Button variant="destructive" size="sm" type="button">Cancel</Button>
             )}
