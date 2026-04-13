@@ -4,7 +4,6 @@ import DoctorPrescription from "../models/doctorPrescriptionModel.js";
 import { fetchAppointmentByIdForUser } from "./appointmentClient.js";
 
 const allowedStatuses = ["draft", "finalized"];
-const updatableFields = ["diagnosis", "medications", "advice", "followUpDate"];
 
 const createServiceError = (statusCode, message) => {
   const error = new Error(message);
@@ -120,8 +119,8 @@ export const createPrescriptionForAppointment = async ({ requester, appointmentI
 
   const appointment = await ensureAppointmentEligibility({ appointmentId, requester });
 
-  const status = payload?.status || "draft";
-  if (!allowedStatuses.includes(status)) {
+  const requestedStatus = payload?.status || "draft";
+  if (!allowedStatuses.includes(requestedStatus)) {
     throw createServiceError(400, "status must be draft or finalized");
   }
 
@@ -130,7 +129,7 @@ export const createPrescriptionForAppointment = async ({ requester, appointmentI
   const advice = payload?.advice;
   const followUpDate = normalizeFollowUpDate(payload?.followUpDate);
 
-  if (status === "finalized") {
+  if (requestedStatus === "finalized") {
     ensureFinalizedContent({ diagnosis, medications: medications || [] });
   }
 
@@ -142,8 +141,7 @@ export const createPrescriptionForAppointment = async ({ requester, appointmentI
     ...(medications !== undefined ? { medications } : {}),
     ...(advice !== undefined ? { advice: String(advice).trim() } : {}),
     ...(followUpDate !== undefined ? { followUpDate } : {}),
-    status,
-    issuedAt: status === "finalized" ? new Date() : null,
+    issuedAt: requestedStatus === "finalized" ? new Date() : null,
   });
 
   return prescription;
@@ -157,7 +155,14 @@ export const listOwnDoctorPrescriptions = async ({ requester, query = {} }) => {
     if (!allowedStatuses.includes(query.status)) {
       throw createServiceError(400, "status filter must be draft or finalized");
     }
-    filter.status = query.status;
+
+    if (query.status === "draft") {
+      filter.issuedAt = null;
+    }
+
+    if (query.status === "finalized") {
+      filter.issuedAt = { $ne: null };
+    }
   }
 
   return DoctorPrescription.find(filter).sort({ createdAt: -1 });
@@ -197,81 +202,6 @@ export const getPrescriptionByAppointmentId = async ({ requester, appointmentId 
   if (String(prescription.doctorUserId) !== String(requester.id)) {
     throw createServiceError(403, "Access denied");
   }
-
-  return prescription;
-};
-
-export const updateDraftPrescription = async ({ requester, prescriptionId, payload }) => {
-  ensureDoctorRole(requester, "update prescriptions");
-  ensureObjectId(prescriptionId, "prescriptionId");
-
-  const prescription = await DoctorPrescription.findById(prescriptionId);
-  if (!prescription) {
-    throw createServiceError(404, "Prescription not found");
-  }
-
-  if (String(prescription.doctorUserId) !== String(requester.id)) {
-    throw createServiceError(403, "Access denied");
-  }
-
-  if (prescription.status !== "draft") {
-    throw createServiceError(400, "Only draft prescriptions can be updated");
-  }
-
-  const update = {};
-
-  if (payload?.diagnosis !== undefined) {
-    update.diagnosis = String(payload.diagnosis).trim();
-  }
-
-  if (payload?.advice !== undefined) {
-    update.advice = String(payload.advice).trim();
-  }
-
-  if (payload?.medications !== undefined) {
-    update.medications = normalizeMedications(payload.medications);
-  }
-
-  if (payload?.followUpDate !== undefined) {
-    update.followUpDate = normalizeFollowUpDate(payload.followUpDate);
-  }
-
-  const hasUpdatableField = Object.keys(update).some((key) => updatableFields.includes(key));
-  if (!hasUpdatableField) {
-    throw createServiceError(400, "No valid fields provided to update");
-  }
-
-  Object.assign(prescription, update);
-  await prescription.save();
-
-  return prescription;
-};
-
-export const finalizePrescription = async ({ requester, prescriptionId }) => {
-  ensureDoctorRole(requester, "finalize prescriptions");
-  ensureObjectId(prescriptionId, "prescriptionId");
-
-  const prescription = await DoctorPrescription.findById(prescriptionId);
-  if (!prescription) {
-    throw createServiceError(404, "Prescription not found");
-  }
-
-  if (String(prescription.doctorUserId) !== String(requester.id)) {
-    throw createServiceError(403, "Access denied");
-  }
-
-  if (prescription.status === "finalized") {
-    throw createServiceError(400, "Prescription is already finalized");
-  }
-
-  ensureFinalizedContent({
-    diagnosis: prescription.diagnosis,
-    medications: prescription.medications,
-  });
-
-  prescription.status = "finalized";
-  prescription.issuedAt = new Date();
-  await prescription.save();
 
   return prescription;
 };

@@ -1,10 +1,8 @@
 import {
   createPrescriptionForAppointment,
-  finalizePrescription,
   getPrescriptionByAppointmentId,
   getPrescriptionById,
   listOwnDoctorPrescriptions,
-  updateDraftPrescription,
 } from "../services/doctorPrescriptionService.js";
 
 const sendServiceError = (res, error) => {
@@ -81,43 +79,6 @@ export const getDoctorPrescriptionByAppointmentId = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      prescription,
-    });
-  } catch (error) {
-    if (sendServiceError(res, error)) return;
-    return next(error);
-  }
-};
-
-export const updateDoctorPrescription = async (req, res, next) => {
-  try {
-    const prescription = await updateDraftPrescription({
-      requester: req.user,
-      prescriptionId: req.params.id,
-      payload: req.body,
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: "Prescription updated successfully",
-      prescription,
-    });
-  } catch (error) {
-    if (sendServiceError(res, error)) return;
-    return next(error);
-  }
-};
-
-export const finalizeDoctorPrescription = async (req, res, next) => {
-  try {
-    const prescription = await finalizePrescription({
-      requester: req.user,
-      prescriptionId: req.params.id,
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: "Prescription finalized successfully",
       prescription,
     });
   } catch (error) {

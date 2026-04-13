@@ -68,12 +68,6 @@ const doctorPrescriptionSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
-    status: {
-      type: String,
-      enum: ["draft", "finalized"],
-      default: "draft",
-      index: true,
-    },
     issuedAt: {
       type: Date,
       default: null,
