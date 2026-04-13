@@ -142,3 +142,14 @@ services:
       - appointment-service
     ports:
       - "5006:5000"
+
+  notification-service:
+    build:
+      context: ./services/notification-service
+    container_name: remedy-notification-service
+    restart: unless-stopped
+    environment:
+      PORT: 5007
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-dev_internal_token_change_me}
+    ports:
+      - "5007:5007"
