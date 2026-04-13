@@ -1,5 +1,6 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { CheckCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getSchedule } from "@/api/services/scheduleService";
 
@@ -123,6 +124,8 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
               <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" size="sm" type="button">Pay Now</Button>
             ) : action === "delete" ? (
               <Button variant="destructive" size="sm" type="button">Delete</Button>
+            ) : appt?.status === "completed" || appt?.paymentStatus === "success" ? (
+              <CheckCircle size={20} className="text-sky-600" />
             ) : (
               <Button variant="destructive" size="sm" type="button">Cancel</Button>
             )}
