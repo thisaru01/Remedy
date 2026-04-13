@@ -93,6 +93,9 @@ services:
       MONGO_URI: ${APPOINTMENT_MONGO_URI:?APPOINTMENT_MONGO_URI is required}
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-dev_internal_token_change_me}
       DOCTOR_SERVICE_URL: ${DOCTOR_SERVICE_URL:-http://doctor-service:5000}
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-http://auth-service:5000}
+      NOTIFICATION_SERVICE_URL: ${NOTIFICATION_SERVICE_URL:-http://notification-service:5007}
+      NOTIFICATION_SERVICE_TIMEOUT_MS: 10000
     ports:
       - "5003:5000"
 

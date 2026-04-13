@@ -8,18 +8,37 @@ class NotificationController {
   // POST /api/notifications/email/appointment-confirmation
   sendAppointmentEmail = async (req, res) => {
     try {
-      const { to, patientName, doctorName, appointmentDateTime } = req.body;
-
-      await this.emailService.sendAppointmentConfirmation({
+      const {
         to,
+        recipientType,
         patientName,
         doctorName,
         appointmentDateTime,
-      });
+        appointmentNumber,
+      } = req.body;
+
+      if (recipientType === "doctor") {
+        await this.emailService.sendDoctorNewAppointment({
+          to,
+          patientName,
+          doctorName,
+          appointmentDateTime,
+          appointmentNumber,
+        });
+      } else {
+        // Default to patient-style email when recipientType is missing or "patient"
+        await this.emailService.sendPatientAppointmentPending({
+          to,
+          patientName,
+          doctorName,
+          appointmentDateTime,
+          appointmentNumber,
+        });
+      }
 
       return res.status(200).json({
         success: true,
-        message: "Appointment confirmation email sent",
+        message: "Appointment notification email sent",
       });
     } catch (error) {
       console.error("Error sending appointment email:", error);
