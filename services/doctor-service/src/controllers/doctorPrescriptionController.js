@@ -3,6 +3,7 @@ import {
   getPrescriptionByAppointmentId,
   getPrescriptionById,
   listOwnDoctorPrescriptions,
+  listOwnPatientPrescriptions,
 } from "../services/doctorPrescriptionService.js";
 
 const sendServiceError = (res, error) => {
@@ -38,6 +39,24 @@ export const createDoctorPrescription = async (req, res, next) => {
 export const getMyDoctorPrescriptions = async (req, res, next) => {
   try {
     const prescriptions = await listOwnDoctorPrescriptions({
+      requester: req.user,
+      query: req.query,
+    });
+
+    return res.status(200).json({
+      success: true,
+      count: prescriptions.length,
+      prescriptions,
+    });
+  } catch (error) {
+    if (sendServiceError(res, error)) return;
+    return next(error);
+  }
+};
+
+export const getMyPatientPrescriptions = async (req, res, next) => {
+  try {
+    const prescriptions = await listOwnPatientPrescriptions({
       requester: req.user,
       query: req.query,
     });

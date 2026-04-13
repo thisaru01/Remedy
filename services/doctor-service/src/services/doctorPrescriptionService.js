@@ -21,6 +21,16 @@ const ensureDoctorRole = (user, action) => {
   }
 };
 
+const ensurePatientRole = (user, action) => {
+  if (!user?.id) {
+    throw createServiceError(400, "Authenticated user id is required");
+  }
+
+  if (user.role !== "patient") {
+    throw createServiceError(403, `Only patients can ${action}`);
+  }
+};
+
 const ensureObjectId = (value, fieldName) => {
   if (!value) {
     throw createServiceError(400, `${fieldName} is required`);
@@ -101,8 +111,8 @@ const ensureAppointmentEligibility = async ({ appointmentId, requester }) => {
     throw createServiceError(404, "Appointment not found");
   }
 
-  if (!["accepted", "completed"].includes(appointment.status)) {
-    throw createServiceError(400, "Prescription can only be issued for accepted or completed appointments");
+  if (appointment.status !== "completed") {
+    throw createServiceError(400, "Prescription can only be issued for completed appointments");
   }
 
   return appointment;
@@ -151,6 +161,27 @@ export const listOwnDoctorPrescriptions = async ({ requester, query = {} }) => {
   ensureDoctorRole(requester, "view prescriptions");
 
   const filter = { doctorUserId: requester.id };
+  if (query?.status) {
+    if (!allowedStatuses.includes(query.status)) {
+      throw createServiceError(400, "status filter must be draft or finalized");
+    }
+
+    if (query.status === "draft") {
+      filter.issuedAt = null;
+    }
+
+    if (query.status === "finalized") {
+      filter.issuedAt = { $ne: null };
+    }
+  }
+
+  return DoctorPrescription.find(filter).sort({ createdAt: -1 });
+};
+
+export const listOwnPatientPrescriptions = async ({ requester, query = {} }) => {
+  ensurePatientRole(requester, "view prescriptions");
+
+  const filter = { patientUserId: requester.id };
   if (query?.status) {
     if (!allowedStatuses.includes(query.status)) {
       throw createServiceError(400, "status filter must be draft or finalized");
