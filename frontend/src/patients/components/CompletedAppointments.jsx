@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { getAppointments } from "@/api/services/appointmentService";
 import AppointmentCard from "./AppointmentCard.jsx";
 
-export default function ApprovedAppointments() {
+export default function CompletedAppointments() {
   const [loading, setLoading] = useState(true);
   const [appointments, setAppointments] = useState([]);
   const [error, setError] = useState(null);
@@ -13,12 +13,10 @@ export default function ApprovedAppointments() {
     const load = async () => {
       try {
         setLoading(true);
-        const res = await getAppointments({ status: "accepted" });
+        const res = await getAppointments();
         const data = res?.data?.appointments ?? [];
         const list = Array.isArray(data) ? data : [];
-        const filtered = list.filter(
-          (appt) => appt?.status === "accepted" && appt?.paymentStatus === "pending",
-        );
+        const filtered = list.filter((appt) => appt?.paymentStatus === "success");
         if (mounted) setAppointments(filtered);
       } catch (err) {
         if (mounted) setError(err?.message || String(err));
@@ -34,14 +32,14 @@ export default function ApprovedAppointments() {
     };
   }, []);
 
-  if (loading) return <div className="pt-4 text-sm text-muted-foreground">Loading approved appointments...</div>;
+  if (loading) return <div className="pt-4 text-sm text-muted-foreground">Loading completed appointments...</div>;
   if (error) return <div className="pt-4 text-sm text-destructive">Error: {error}</div>;
-  if (!appointments.length) return <div className="pt-4 text-sm text-muted-foreground">No approved appointments with pending payment.</div>;
+  if (!appointments.length) return <div className="pt-4 text-sm text-muted-foreground">No completed appointments yet.</div>;
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {appointments.map((appt) => (
-        <AppointmentCard key={appt._id} appt={appt} action="pay" />
+        <AppointmentCard key={appt._id} appt={appt} />
       ))}
     </div>
   );
