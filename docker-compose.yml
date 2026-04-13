@@ -151,5 +151,8 @@ services:
     environment:
       PORT: 5007
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-dev_internal_token_change_me}
+      GMAIL_USER: ${GMAIL_USER}
+      GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD}
+      EMAIL_FROM: ${EMAIL_FROM}
     ports:
       - "5007:5007"
