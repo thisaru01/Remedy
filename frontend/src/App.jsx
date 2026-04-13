@@ -13,6 +13,8 @@ import PatientProfile from "@/patients/pages/PatientProfile.jsx";
 import PatientAppointments from "@/patients/pages/PatientAppointments.jsx";
 import PatientReports from "@/patients/pages/PatientReports.jsx";
 import PatientPrescriptions from "@/patients/pages/PatientPrescriptions.jsx";
+import PaymentSuccess from "@/patients/pages/PaymentSuccess.jsx";
+import PaymentCancel from "@/patients/pages/PaymentCancel.jsx";
 
 // Doctor
 import DoctorRouteLayout from "./doctors/DoctorRouteLayout.jsx";
@@ -53,6 +55,10 @@ export default function App() {
             <Route path=":type" element={<PatientReports />} />
           </Route>
           <Route path="prescriptions" element={<PatientPrescriptions />} />
+          <Route path="payments">
+            <Route path="success" element={<PaymentSuccess />} />
+            <Route path="cancel" element={<PaymentCancel />} />
+          </Route>
           <Route path="*" element={<Navigate to="." replace />} />
         </Route>
 

@@ -7,6 +7,7 @@ services:
     restart: unless-stopped
     environment:
       VITE_API_BASE_URL: http://localhost:8080/api
+      VITE_TEST_APPOINTMENT_ID: ${VITE_TEST_APPOINTMENT_ID:-}
     depends_on:
       - gateway
     ports:
@@ -137,7 +138,8 @@ services:
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-dev_internal_token_change_me}
       APPOINTMENT_SERVICE_URL: ${APPOINTMENT_SERVICE_URL:-http://appointment-service:5000}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
-      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_SUCCESS_URL: ${STRIPE_SUCCESS_URL:-http://localhost:5173/patient/payments/success}
+      STRIPE_CANCEL_URL: ${STRIPE_CANCEL_URL:-http://localhost:5173/patient/payments/cancel}
     depends_on:
       - appointment-service
     ports:
