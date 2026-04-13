@@ -1,5 +1,4 @@
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { useEffect, useState } from "react";
 import { getSchedule } from "@/api/services/scheduleService";
 
@@ -9,6 +8,50 @@ function formatDate(dt) {
   } catch (e) {
     return dt;
   }
+}
+
+function formatDoctorDisplay(appt) {
+  // appointment may include doctor info in several shapes: { doctorId: 'id' } or
+  // { doctorId: { _id, name, firstName, lastName } } or { doctorName }
+  const d = appt?.doctor || appt?.doctorId || null;
+
+  if (!d) return "-";
+
+  if (typeof d === "string") {
+    // fallback to doctorName property if present
+    if (typeof appt?.doctorName === "string") return `Dr. ${appt.doctorName}`;
+    return d;
+  }
+
+  // object
+  if (typeof d === "object") {
+    if (typeof d.name === "string" && d.name.trim()) return `Dr. ${d.name}`;
+    const first = d.firstName || d.first || "";
+    const last = d.lastName || d.last || "";
+    const full = `${first} ${last}`.trim();
+    if (full) return `Dr. ${full}`;
+    if (typeof d._id === "string") return d._id;
+  }
+
+  return "-";
+}
+
+function formatDoctorSpecialty(appt) {
+  const d = appt?.doctor || appt?.doctorId || null;
+  // direct fields on appointment
+  if (typeof appt?.doctorSpecialty === "string" && appt.doctorSpecialty.trim()) return appt.doctorSpecialty;
+  if (typeof appt?.specialty === "string" && appt.specialty.trim()) return appt.specialty;
+
+  if (!d) return null;
+
+  if (typeof d === "object") {
+    if (typeof d.specialty === "string" && d.specialty.trim()) return d.specialty;
+    if (typeof d.specialization === "string" && d.specialization.trim()) return d.specialization;
+    if (Array.isArray(d.specialties) && d.specialties.length) return d.specialties.join(", ");
+    if (Array.isArray(d.specialities) && d.specialities.length) return d.specialities.join(", ");
+  }
+
+  return null;
 }
 
 export default function AppointmentCard({ appt }) {
@@ -42,35 +85,38 @@ export default function AppointmentCard({ appt }) {
       <CardHeader>
         <div className="flex items-center justify-between gap-4">
           <div>
-            <CardTitle>{appt.appointmentNumber || "Appointment"}</CardTitle>
-            <CardDescription className="mt-1 text-xs">{formatDate(appt.createdAt)}</CardDescription>
             {schedule && (
-              <div className="mt-1 text-xs text-muted-foreground">
+              <div className="text-sm font-semibold text-primary">
                 {schedule.day} · {schedule.startTime}{schedule.endTime ? ` - ${schedule.endTime}` : ""}
               </div>
             )}
           </div>
-          <div className="flex items-center gap-2">
-              <Badge variant="outline">{appt.status}</Badge>
-            </div>
+          <div className="text-right">
+            {appt?.appointmentNumber && (
+              <div className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs bg-primary text-primary-foreground font-semibold">
+                {appt.appointmentNumber}
+              </div>
+            )}
+          </div>
         </div>
       </CardHeader>
 
       <CardContent>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-2">
           <div>
             <div className="text-xs text-muted-foreground">Doctor</div>
-            <div className="text-sm">{appt.doctorId ?? "-"}</div>
+            <div className="text-sm">{formatDoctorDisplay(appt)}</div>
           </div>
           <div>
-            <div className="text-xs text-muted-foreground">Schedule</div>
-            <div className="text-sm">{appt.scheduleId ?? "-"}</div>
+            <div className="text-xs text-muted-foreground">Specialty</div>
+            <div className="text-sm">{formatDoctorSpecialty(appt) ?? "-"}</div>
           </div>
-          {/* notes removed per request */}
+          {/* schedule removed per request */}
         </div>
       </CardContent>
-
-      {/* footer removed per request */}
+      <div className="px-4 pb-4">
+        <div className="text-xs text-muted-foreground">{formatDate(appt.createdAt)}</div>
+      </div>
     </Card>
   );
 }
