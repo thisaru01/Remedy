@@ -5,6 +5,7 @@ import morgan from "morgan";
 import connectDB from "./src/config/db.js";
 import doctorProfileRoutes from "./src/routes/doctorProfileRoutes.js";
 import doctorScheduleRoutes from "./src/routes/doctorScheduleRoutes.js";
+import doctorPrescriptionRoutes from "./src/routes/doctorPrescriptionRoutes.js";
 import { startScheduleSlotResetJob } from "./src/services/scheduleSlotResetJob.js";
 
 dotenv.config();
@@ -22,6 +23,7 @@ connectDB();
 // Routes
 app.use("/api/doctor-profiles", doctorProfileRoutes);
 app.use("/api/doctor-schedules", doctorScheduleRoutes);
+app.use("/api/doctor-prescriptions", doctorPrescriptionRoutes);
 
 // Test route
 app.get("/api/health", (req, res) => {
