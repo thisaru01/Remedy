@@ -1,4 +1,5 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { getSchedule } from "@/api/services/scheduleService";
 
@@ -54,7 +55,7 @@ function formatDoctorSpecialty(appt) {
   return null;
 }
 
-export default function AppointmentCard({ appt }) {
+export default function AppointmentCard({ appt, action = "cancel" }) {
   const [schedule, setSchedule] = useState(null);
   const [loadingSchedule, setLoadingSchedule] = useState(false);
 
@@ -115,7 +116,16 @@ export default function AppointmentCard({ appt }) {
         </div>
       </CardContent>
       <div className="px-4 pb-4">
-        <div className="text-xs text-muted-foreground">{formatDate(appt.createdAt)}</div>
+        <div className="flex items-center justify-between">
+          <div className="text-xs text-muted-foreground">{formatDate(appt.createdAt)}</div>
+          <div>
+            {action === "pay" ? (
+              <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" size="sm" type="button">Pay Now</Button>
+            ) : (
+              <Button variant="destructive" size="sm" type="button">Cancel</Button>
+            )}
+          </div>
+        </div>
       </div>
     </Card>
   );
