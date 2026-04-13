@@ -2,8 +2,8 @@ import Payment from "../models/paymentModel.js";
 import {
   fetchAppointmentByIdForUser,
   updateAppointmentPaymentStatus,
-} from "./appointmentClient.js";
-import { createCheckoutSession } from "./stripeService.js";
+} from "../clients/appointmentClient.js";
+import { createCheckoutSession } from "../clients/stripeClient.js";
 
 const assertPatientRequester = (requester) => {
   if (!requester || requester.role !== "patient") {
