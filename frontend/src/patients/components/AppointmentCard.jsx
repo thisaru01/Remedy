@@ -120,6 +120,10 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
             <div className="text-xs text-muted-foreground">Specialty</div>
             <div className="text-sm">{formatDoctorSpecialty(appt) ?? "-"}</div>
           </div>
+          <div>
+            <div className="text-xs text-muted-foreground">Fee</div>
+            <div className="text-sm">{Number(appt?.fee ?? 2500).toLocaleString()}</div>
+          </div>
           {/* schedule removed per request */}
         </div>
       </CardContent>
