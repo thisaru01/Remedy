@@ -3,6 +3,7 @@ import PendingAppointments from "@/patients/components/PendingAppointments.jsx";
 import ApprovedAppointments from "@/patients/components/ApprovedAppointments.jsx";
 import RejectedAppointments from "@/patients/components/RejectedAppointments.jsx";
 import CompletedAppointments from "@/patients/components/CompletedAppointments.jsx";
+import CanceledAppointments from "@/patients/components/CanceledAppointments.jsx";
 
 const LABELS = {
   approved: "Approved",
@@ -29,6 +30,7 @@ export default function PatientAppointments() {
       {status === "approved" && <ApprovedAppointments />}
       {status === "completed" && <CompletedAppointments />}
       {status === "rejected" && <RejectedAppointments />}
+      {status === "canceled" && <CanceledAppointments />}
     </div>
   );
 }
