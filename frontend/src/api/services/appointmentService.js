@@ -19,3 +19,7 @@ export const deleteAppointment = (id) => {
 export const rescheduleAppointment = (id, scheduleId) => {
   return axios.patch(`/appointments/${id}/reschedule`, { scheduleId });
 };
+
+export const createAppointment = (data) => {
+  return axios.post("/appointments", data);
+};
