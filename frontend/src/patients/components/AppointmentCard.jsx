@@ -159,7 +159,10 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
             ) : action === "delete" ? (
               <Button variant="destructive" size="sm" type="button">Delete</Button>
             ) : appt?.status === "completed" || appt?.paymentStatus === "success" ? (
-              <CheckCircle size={20} className="text-sky-600" />
+              <div className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs border border-emerald-200 bg-emerald-50 text-emerald-600 font-semibold">
+                <CheckCircle size={14} className="text-emerald-600" />
+                <span className="text-xs font-medium">Paid</span>
+              </div>
             ) : appt?.status === "pending" ? (
               <div className="flex items-center gap-2">
                 <Button
