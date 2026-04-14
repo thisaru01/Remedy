@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { FilePlus, FileText, Search } from "lucide-react";
+import { FilePlus, FileText } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -15,28 +15,17 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import UploadReportDialog from "@/patients/components/UploadReportDialog";
+import EditReportDialog from "@/patients/components/EditReportDialog";
 import PatientReportCard from "@/patients/components/PatientReportCard";
 import PatientReportCardSkeleton from "@/patients/components/PatientReportCardSkeleton";
+import ShareReportDialog from "@/patients/components/ShareReportDialog";
 import {
   deletePatientReport,
   getMyPatientReports,
   updatePatientReport,
   uploadPatientReport,
-  grantDoctorAccessToPatientReport,
 } from "@/api/services/patientReportService";
-import {
-  getApprovedDoctors,
-  getDoctorDetails,
-} from "@/api/services/doctorService";
 
 function normalizeReportsResponse(response) {
   const data = response?.data;
@@ -68,17 +57,6 @@ export default function GeneralReportsSection() {
   const [deletingId, setDeletingId] = useState(null);
 
   const [sharingReport, setSharingReport] = useState(null);
-  const [shareDoctorId, setShareDoctorId] = useState("");
-  const [shareExpiresAt, setShareExpiresAt] = useState("");
-  const [sharing, setSharing] = useState(false);
-  const [shareError, setShareError] = useState(null);
-
-  const [doctorSearch, setDoctorSearch] = useState("");
-  const [doctorOptions, setDoctorOptions] = useState([]);
-  const [loadingDoctors, setLoadingDoctors] = useState(false);
-  const [doctorError, setDoctorError] = useState(null);
-  const [doctorsLoaded, setDoctorsLoaded] = useState(false);
-  const [selectedDoctor, setSelectedDoctor] = useState(null);
 
   useEffect(() => {
     let mounted = true;
@@ -105,108 +83,7 @@ export default function GeneralReportsSection() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!sharingReport || doctorsLoaded) return;
-
-    let cancelled = false;
-
-    const loadDoctors = async () => {
-      try {
-        setLoadingDoctors(true);
-        setDoctorError(null);
-        const response = await getApprovedDoctors();
-        const raw = response?.data?.profiles ?? response?.data ?? [];
-        let list = Array.isArray(raw) ? raw : [];
-
-        // Enrich doctor profiles with display name/photo where possible
-        try {
-          const enriched = await Promise.all(
-            list.map(async (doctor) => {
-              const userId =
-                doctor.userId || doctor.user?._id || doctor._id || null;
-              if (!userId) return doctor;
-
-              try {
-                const detailResp = await getDoctorDetails(userId);
-                const detail =
-                  detailResp?.data?.profile || detailResp?.data?.data;
-                if (!detail) return doctor;
-
-                return {
-                  ...doctor,
-                  doctorName:
-                    detail.doctorName || detail.user?.name || doctor.doctorName,
-                  profilePhoto:
-                    detail.profilePhoto ||
-                    detail.user?.profilePhoto ||
-                    doctor.profilePhoto,
-                };
-              } catch {
-                return doctor;
-              }
-            }),
-          );
-          list = enriched;
-        } catch {
-          // If enrichment fails, fall back to raw list
-        }
-
-        if (!cancelled) {
-          setDoctorOptions(list);
-          setDoctorsLoaded(true);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setDoctorError(err);
-          setDoctorOptions([]);
-          toast.error(
-            err?.message || "Failed to load doctors. Please try again.",
-          );
-        }
-      } finally {
-        if (!cancelled) {
-          setLoadingDoctors(false);
-        }
-      }
-    };
-
-    loadDoctors();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [sharingReport, doctorsLoaded]);
-
   const hasReports = useMemo(() => reports.length > 0, [reports.length]);
-
-  const filteredDoctors = useMemo(() => {
-    if (!Array.isArray(doctorOptions) || doctorOptions.length === 0) {
-      return [];
-    }
-
-    const query = doctorSearch.trim().toLowerCase();
-    if (!query) {
-      return [];
-    }
-
-    return doctorOptions
-      .filter((doctor) => {
-        const name = doctor?.doctorName || doctor?.user?.name || "";
-        const specialty = doctor?.specialty || "";
-        const bio = doctor?.bio || "";
-        const languages = Array.isArray(doctor?.languages)
-          ? doctor.languages.join(" ")
-          : "";
-        const hospitals = Array.isArray(doctor?.workingHospitals)
-          ? doctor.workingHospitals.map((h) => h?.hospitalName || "").join(" ")
-          : "";
-
-        const haystack =
-          `${name} ${specialty} ${bio} ${languages} ${hospitals}`.toLowerCase();
-        return haystack.includes(query);
-      })
-      .slice(0, 6);
-  }, [doctorOptions, doctorSearch]);
 
   const handleUpload = async (event) => {
     event.preventDefault();
@@ -329,63 +206,6 @@ export default function GeneralReportsSection() {
 
   const openShare = (report) => {
     setSharingReport(report || null);
-    setShareDoctorId("");
-    setShareExpiresAt("");
-    setShareError(null);
-    setDoctorSearch("");
-    setSelectedDoctor(null);
-  };
-
-  const handleShare = async (event) => {
-    event.preventDefault();
-    if (!sharingReport?._id) return;
-
-    const trimmedDoctorId = shareDoctorId.trim();
-    if (!trimmedDoctorId) {
-      setShareError("Doctor ID is required.");
-      toast.error("Please select a doctor to share with.");
-      return;
-    }
-
-    try {
-      setSharing(true);
-      setShareError(null);
-
-      const body = { doctorId: trimmedDoctorId };
-      if (shareExpiresAt.trim()) {
-        body.expiresAt = shareExpiresAt.trim();
-      }
-
-      const response = await grantDoctorAccessToPatientReport(
-        sharingReport._id,
-        body,
-      );
-      const updated = response?.data?.data || response?.data?.report || null;
-
-      if (updated) {
-        setReports((prev) =>
-          prev.map((r) =>
-            String(r._id) === String(sharingReport._id) ? updated : r,
-          ),
-        );
-      }
-
-      toast.success("Access granted to doctor");
-      setSharingReport(null);
-    } catch (err) {
-      console.error("Failed to grant access", err);
-      setShareError(err?.message || "Failed to grant access");
-      toast.error(err?.message || "Failed to grant access");
-    } finally {
-      setSharing(false);
-    }
-  };
-
-  const handleSelectDoctor = (doctor) => {
-    if (!doctor) return;
-    const id = doctor.userId || doctor.user?._id || doctor._id || "";
-    setShareDoctorId(id ? String(id) : "");
-    setSelectedDoctor(doctor);
   };
 
   return (
@@ -418,90 +238,18 @@ export default function GeneralReportsSection() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add a general report</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleUpload} className="space-y-4">
-            <div className="space-y-1.5">
-              <label
-                htmlFor="report-title"
-                className="text-xs font-medium text-foreground"
-              >
-                Title
-              </label>
-              <Input
-                id="report-title"
-                name="title"
-                value={uploadTitle}
-                onChange={(e) => setUploadTitle(e.target.value)}
-                placeholder="e.g. Blood test results"
-                required
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label
-                htmlFor="report-description"
-                className="text-xs font-medium text-foreground"
-              >
-                Description (optional)
-              </label>
-              <Textarea
-                id="report-description"
-                name="description"
-                value={uploadDescription}
-                onChange={(e) => setUploadDescription(e.target.value)}
-                placeholder="Add any notes about this report"
-                rows={3}
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label
-                htmlFor="report-file"
-                className="text-xs font-medium text-foreground"
-              >
-                File
-              </label>
-              <Input
-                id="report-file"
-                name="file"
-                type="file"
-                accept="application/pdf,image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0] || null;
-                  setUploadFile(file);
-                }}
-              />
-              <p className="text-[0.7rem] text-muted-foreground">
-                Upload PDF or image files. Max size depends on server limits.
-              </p>
-            </div>
-
-            {uploadError && (
-              <p className="text-xs text-destructive">{uploadError}</p>
-            )}
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setUploadOpen(false)}
-                disabled={uploading}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" size="sm" disabled={uploading}>
-                {uploading ? "Uploading..." : "Upload"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <UploadReportDialog
+        open={uploadOpen}
+        onOpenChange={setUploadOpen}
+        uploading={uploading}
+        uploadTitle={uploadTitle}
+        uploadDescription={uploadDescription}
+        uploadError={uploadError}
+        onTitleChange={setUploadTitle}
+        onDescriptionChange={setUploadDescription}
+        onFileChange={setUploadFile}
+        onSubmit={handleUpload}
+      />
 
       <div className="space-y-4">
         {/* Banner and upload CTA */}
@@ -573,205 +321,31 @@ export default function GeneralReportsSection() {
           </CardContent>
         </div>
       </div>
-
-      <Dialog
+      <EditReportDialog
         open={Boolean(editingReport)}
-        onOpenChange={(open) => {
-          if (!open) setEditingReport(null);
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit report</DialogTitle>
-          </DialogHeader>
-          {editingReport && (
-            <form onSubmit={handleUpdate} className="space-y-4">
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="edit-report-title"
-                  className="text-xs font-medium text-foreground"
-                >
-                  Title
-                </label>
-                <Input
-                  id="edit-report-title"
-                  name="title"
-                  defaultValue={editingReport.title}
-                  required
-                />
-              </div>
+        report={editingReport}
+        updating={updating}
+        updateError={updateError}
+        onClose={() => setEditingReport(null)}
+        onSubmit={handleUpdate}
+      />
 
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="edit-report-description"
-                  className="text-xs font-medium text-foreground"
-                >
-                  Description (optional)
-                </label>
-                <Textarea
-                  id="edit-report-description"
-                  name="description"
-                  defaultValue={editingReport.description}
-                  rows={3}
-                />
-              </div>
-
-              {updateError && (
-                <p className="text-xs text-destructive">{updateError}</p>
-              )}
-
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setEditingReport(null)}
-                  disabled={updating}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" size="sm" disabled={updating}>
-                  {updating ? "Saving..." : "Save changes"}
-                </Button>
-              </DialogFooter>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
+      <ShareReportDialog
         open={Boolean(sharingReport)}
-        onOpenChange={(open) => {
-          if (!open) setSharingReport(null);
+        report={sharingReport}
+        onClose={() => setSharingReport(null)}
+        onReportUpdated={(updated) => {
+          setReports((prev) =>
+            prev.map((r) =>
+              String(r._id) === String(updated._id) ? updated : r,
+            ),
+          );
+          // Keep dialog's current report in sync if it's the same one
+          setSharingReport((prev) =>
+            prev && String(prev._id) === String(updated._id) ? updated : prev,
+          );
         }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Share report with doctor</DialogTitle>
-          </DialogHeader>
-          {sharingReport && (
-            <form onSubmit={handleShare} className="space-y-4">
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="share-doctor-search"
-                  className="text-xs font-medium text-foreground"
-                >
-                  Search doctor
-                </label>
-                <div className="relative">
-                  <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="share-doctor-search"
-                    value={doctorSearch}
-                    onChange={(e) => setDoctorSearch(e.target.value)}
-                    placeholder="Search by doctor name"
-                    className="pl-7"
-                  />
-                </div>
-                <div className="mt-2 max-h-40 space-y-1 overflow-y-auto rounded-md border bg-muted/40 p-1 text-xs">
-                  {loadingDoctors && (
-                    <p className="px-2 py-1 text-muted-foreground">
-                      Loading doctors…
-                    </p>
-                  )}
-                  {!loadingDoctors && doctorError && (
-                    <p className="px-2 py-1 text-destructive">
-                      {doctorError.message || "Failed to load doctors"}
-                    </p>
-                  )}
-                  {!loadingDoctors &&
-                    !doctorError &&
-                    doctorSearch.trim() === "" && (
-                      <p className="px-2 py-1 text-muted-foreground">
-                        Start typing to search for a doctor.
-                      </p>
-                    )}
-                  {!loadingDoctors &&
-                    !doctorError &&
-                    doctorSearch.trim() !== "" &&
-                    filteredDoctors.length === 0 && (
-                      <p className="px-2 py-1 text-muted-foreground">
-                        No doctors match your search.
-                      </p>
-                    )}
-                  {!loadingDoctors &&
-                    !doctorError &&
-                    filteredDoctors.map((doctor) => {
-                      const name =
-                        doctor.doctorName || doctor.user?.name || "Doctor";
-                      const specialty = doctor.specialty || "";
-                      const isActive =
-                        selectedDoctor &&
-                        (selectedDoctor.userId === doctor.userId ||
-                          selectedDoctor._id === doctor._id);
-                      return (
-                        <button
-                          key={doctor._id || doctor.userId}
-                          type="button"
-                          onClick={() => handleSelectDoctor(doctor)}
-                          className={`flex w-full flex-col items-start rounded-md px-2 py-1 text-left hover:bg-background ${isActive ? "bg-background" : ""}`}
-                        >
-                          <span className="font-medium text-foreground">
-                            {name}
-                          </span>
-                          {specialty && (
-                            <span className="text-[0.7rem] text-muted-foreground">
-                              {specialty}
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                </div>
-                {selectedDoctor && (
-                  <p className="text-[0.7rem] text-muted-foreground">
-                    Selected doctor:{" "}
-                    {selectedDoctor.doctorName || selectedDoctor.user?.name}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="share-expires-at"
-                  className="text-xs font-medium text-foreground"
-                >
-                  Expires at (optional)
-                </label>
-                <Input
-                  id="share-expires-at"
-                  name="expiresAt"
-                  value={shareExpiresAt}
-                  onChange={(e) => setShareExpiresAt(e.target.value)}
-                  placeholder="e.g. 2026-04-30T18:00:00Z"
-                />
-                <p className="text-[0.7rem] text-muted-foreground">
-                  Leave empty for no expiry, or provide an ISO date-time.
-                </p>
-              </div>
-
-              {shareError && (
-                <p className="text-xs text-destructive">{shareError}</p>
-              )}
-
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSharingReport(null)}
-                  disabled={sharing}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" size="sm" disabled={sharing}>
-                  {sharing ? "Sharing..." : "Share"}
-                </Button>
-              </DialogFooter>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
+      />
     </>
   );
 }
