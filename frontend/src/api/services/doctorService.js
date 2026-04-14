@@ -44,3 +44,7 @@ export const getApprovedDoctorsBySpecialty = (specialty) => {
 export const getDoctorDetails = (id) => {
   return axios.get(`/doctor-profiles/details/${id}`);
 };
+
+export const getScheduleById = (scheduleId) => {
+  return axios.get(`/doctor-schedules/schedule/${scheduleId}`);
+};
