@@ -25,7 +25,6 @@ test("validateCreateSessionPayload returns error when required fields are missin
   const result = validateCreateSessionPayload({
     appointmentId: "a1",
     patientId: "p1",
-    doctorId: "d1",
   });
 
   assert.equal(result.error.status, 400);
@@ -37,7 +36,6 @@ test("validateCreateSessionPayload returns ok for complete payload", () => {
     appointmentId: "a1",
     patientId: "p1",
     doctorId: "d1",
-    scheduledAt: "2026-03-28T10:00:00.000Z",
   });
 
   assert.deepEqual(result, { ok: true });
@@ -134,7 +132,7 @@ test("getPaginatedSessions returns shaped pagination payload", async () => {
   __setSessionServiceDepsForTest({
     listSessions: async ({ filter, sort, skip, limit }) => {
       assert.deepEqual(filter, { doctorId: "d1" });
-      assert.deepEqual(sort, { scheduledAt: -1 });
+      assert.deepEqual(sort, { createdAt: -1 });
       assert.equal(skip, 2);
       assert.equal(limit, 2);
       return [{ id: "s1" }, { id: "s2" }];

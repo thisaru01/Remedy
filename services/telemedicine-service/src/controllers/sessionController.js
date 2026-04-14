@@ -76,9 +76,9 @@ const sendServiceError = (res, result) => {
  */
 export const createSession = async (req, res, next) => {
   try {
-    const { appointmentId, patientId, doctorId, scheduledAt } = req.body;
+    const { appointmentId, patientId, doctorId } = req.body;
 
-    const createValidation = controllerDeps.validateCreateSessionPayload({ appointmentId, patientId, doctorId, scheduledAt });
+    const createValidation = controllerDeps.validateCreateSessionPayload({ appointmentId, patientId, doctorId });
     if (createValidation.error) {
       return sendServiceError(res, createValidation);
     }
@@ -110,7 +110,6 @@ export const createSession = async (req, res, next) => {
       doctorName: req.user.name || "",
       roomName,
       joinUrl,
-      scheduledAt,
       status: "scheduled",
     });
 

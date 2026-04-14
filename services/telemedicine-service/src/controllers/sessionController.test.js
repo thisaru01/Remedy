@@ -67,7 +67,6 @@ test("createSession returns 403 when doctor ownership check fails", async () => 
       appointmentId: "a1",
       patientId: "p1",
       doctorId: "d1",
-      scheduledAt: "2026-03-28T10:00:00.000Z",
     },
     user: { id: "d2", role: "doctor" },
   };
@@ -93,7 +92,6 @@ test("createSession returns 503 when appointment validation throws", async () =>
       appointmentId: "a1",
       patientId: "p1",
       doctorId: "d1",
-      scheduledAt: "2026-03-28T10:00:00.000Z",
     },
     user: { id: "d1", role: "doctor", name: "Dr One" },
   };
@@ -119,7 +117,6 @@ test("createSession returns 201 on success", async () => {
       appointmentId: "a1",
       patientId: "p1",
       doctorId: "d1",
-      scheduledAt: "2026-03-28T10:00:00.000Z",
     },
     user: { id: "d1", role: "doctor", name: "Dr One" },
   };
