@@ -74,17 +74,11 @@ const assertPaymentOwnership = (payment, requester) => {
   }
 };
 
-export const createPayment = async ({ appointmentId, amount, currency }, requester) => {
+export const createPayment = async ({ appointmentId, currency }, requester) => {
   assertPatientRequester(requester);
 
   if (!appointmentId) {
     const error = new Error("appointmentId is required");
-    error.statusCode = 400;
-    throw error;
-  }
-
-  if (!Number.isFinite(Number(amount)) || Number(amount) <= 0) {
-    const error = new Error("amount must be a positive number");
     error.statusCode = 400;
     throw error;
   }
@@ -95,6 +89,8 @@ export const createPayment = async ({ appointmentId, amount, currency }, request
     error.statusCode = 404;
     throw error;
   }
+
+  const amount = appointment.fee ?? 2500;
 
   if (String(appointment.patientId) !== String(requester.id)) {
     const error = new Error("You can only pay for your own appointments");
@@ -186,41 +182,6 @@ export const getPayments = async (requester) => {
   }
 
   return Payment.find({ patientId: requester.id }).sort({ createdAt: -1 });
-};
-
-export const handleStripeWebhookEvent = async (event) => {
-  const eventType = event?.type || "";
-  const session = event?.data?.object;
-
-  if (!session?.id) {
-    return null;
-  }
-
-  const payment = await Payment.findOne({ checkoutSessionId: session.id });
-  if (!payment) {
-    return null;
-  }
-
-  switch (eventType) {
-    case "checkout.session.completed":
-    case "checkout.session.async_payment_succeeded":
-      return syncPaymentStatus(payment, "success", {
-        providerPaymentIntentId: session.payment_intent,
-      });
-
-    case "checkout.session.async_payment_failed":
-    case "checkout.session.expired":
-      return syncPaymentStatus(payment, "failed", {
-        failureReason:
-          session.payment_status === "unpaid"
-            ? "Stripe checkout session was not paid"
-            : "Stripe checkout session failed",
-        providerPaymentIntentId: session.payment_intent,
-      });
-
-    default:
-      return null;
-  }
 };
 
 export const verifyPaymentBySession = async (sessionId, requester) => {

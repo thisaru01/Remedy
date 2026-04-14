@@ -205,7 +205,7 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
           <div className="text-xs text-muted-foreground">{formatDate(appt.createdAt)}</div>
           <div>
             {action === "pay" ? (
-              <PaymentButton appointmentId={appt._id} amount={appt?.fee ?? 2500} />
+              <PaymentButton appointmentId={appt._id} />
             ) : action === "delete" ? (
               <Button variant="destructive" size="sm" type="button">Delete</Button>
             ) : appt?.status === "completed" || appt?.paymentStatus === "success" ? (
