@@ -15,6 +15,7 @@ import PatientReports from "@/patients/pages/PatientReports.jsx";
 import PatientPrescriptions from "@/patients/pages/PatientPrescriptions.jsx";
 import PaymentSuccess from "@/patients/pages/PaymentSuccess.jsx";
 import PaymentCancel from "@/patients/pages/PaymentCancel.jsx";
+import AppointmentDetail from "@/patients/pages/AppointmentDetail.jsx";
 
 // Doctor
 import DoctorRouteLayout from "./doctors/DoctorRouteLayout.jsx";
@@ -50,6 +51,7 @@ export default function App() {
           <Route path="profile" element={<PatientProfile />} />
           <Route path="appointments">
             <Route path=":status" element={<PatientAppointments />} />
+            <Route path="detail/:id" element={<AppointmentDetail />} />
           </Route>
           <Route path="reports">
             <Route path=":type" element={<PatientReports />} />

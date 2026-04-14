@@ -4,6 +4,7 @@ import { CheckCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
+import { getSchedulesByDoctor } from "@/api/services/scheduleService";
 import { useEffect, useState } from "react";
 import { getSchedule } from "@/api/services/scheduleService";
 import PaymentButton from "@/patients/components/PaymentButton";
@@ -66,6 +67,7 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
   const [selectedDoctor, setSelectedDoctor] = useState("");
   const [selectedSchedule, setSelectedSchedule] = useState("");
+  const [schedulesList, setSchedulesList] = useState([]);
 
   useEffect(() => {
     let mounted = true;
@@ -89,9 +91,32 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
     };
   }, [appt?.scheduleId]);
 
+  useEffect(() => {
+    // load schedules for the appointment's doctor so the reschedule dialog lists only those
+    let mounted = true;
+    const loadDoctorSchedules = async () => {
+      try {
+        const doctorId = typeof appt?.doctorId === "string" ? appt.doctorId : (appt?.doctor && appt.doctor._id) || null;
+        if (!doctorId) return;
+        const res = await getSchedulesByDoctor(doctorId);
+        const data = res?.data?.schedules ?? res?.data ?? [];
+        if (mounted) setSchedulesList(Array.isArray(data) ? data : []);
+      } catch (e) {
+        // ignore
+      }
+    };
+
+    loadDoctorSchedules();
+    return () => {
+      mounted = false;
+    };
+  }, [appt?.doctorId, appt?.doctor]);
+
+  const isClickable = appt?.status === "accepted" && appt?.paymentStatus === "success";
+
   return (
     <>
-    <Card>
+    <Card className={isClickable ? "transition-transform duration-150 ease-in-out hover:-translate-y-1 hover:shadow-lg cursor-pointer" : ""}>
       <CardHeader>
         <div className="flex items-center justify-between gap-4">
           <div>
@@ -137,7 +162,10 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
             ) : action === "delete" ? (
               <Button variant="destructive" size="sm" type="button">Delete</Button>
             ) : appt?.status === "completed" || appt?.paymentStatus === "success" ? (
-              <CheckCircle size={20} className="text-sky-600" />
+              <div className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs border border-emerald-200 bg-emerald-50 text-emerald-600 font-semibold">
+                <CheckCircle size={14} className="text-emerald-600" />
+                <span className="text-xs font-medium">Paid</span>
+              </div>
             ) : appt?.status === "pending" ? (
               <div className="flex items-center gap-2">
                 <Button
@@ -173,31 +201,15 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
           <div className="space-y-1.5">
             <Label htmlFor={`doctor-${appt._id}`}>Doctor</Label>
             <Select value={selectedDoctor} onValueChange={setSelectedDoctor}>
-              <SelectTrigger id={`doctor-${appt._id}`} className="w-full">
-                <SelectValue placeholder="Select doctor" />
-              </SelectTrigger>
-              <SelectContent>
-                {/* show current appointment doctor as an option */}
-                {(typeof appt?.doctorId === "string" || typeof appt?.doctor === "object") && (
-                  <SelectItem value={(typeof appt?.doctorId === "string" && appt.doctorId) || (typeof appt?.doctor === "object" && appt.doctor?._id) || ""}>
-                    {formatDoctorDisplay(appt)}
-                  </SelectItem>
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor={`schedule-${appt._id}`}>Schedule</Label>
-            <Select value={selectedSchedule} onValueChange={setSelectedSchedule}>
               <SelectTrigger id={`schedule-${appt._id}`} className="w-full">
                 <SelectValue placeholder="Select schedule" />
               </SelectTrigger>
               <SelectContent>
-                {schedule && (
-                  <SelectItem value={appt.scheduleId}>
-                    {schedule.day} · {schedule.startTime}{schedule.endTime ? ` - ${schedule.endTime}` : ""}
+                {schedulesList.map((s) => (
+                  <SelectItem key={s._id} value={s._id}>
+                    {s.day} · {s.startTime}{s.endTime ? ` - ${s.endTime}` : ""}
                   </SelectItem>
-                )}
+                ))}
               </SelectContent>
             </Select>
           </div>

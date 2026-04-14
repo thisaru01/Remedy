@@ -4,6 +4,7 @@ import {
   createDoctorProfile,
   getApprovedDoctorProfiles,
   getApprovedDoctorProfilesBySpecialty,
+  getDoctorFullDetails,
   getDoctorProfilesByVerificationStatus,
   getOwnDoctorProfile,
   approveDoctorVerification,
@@ -32,6 +33,7 @@ router.patch(
   internalAuthMiddleware,
   rejectDoctorVerification,
 );
+router.get("/details/:id", internalAuthMiddleware, getDoctorFullDetails);
 router.get("/me", internalAuthMiddleware, getOwnDoctorProfile);
 router.put("/me", internalAuthMiddleware, updateOwnDoctorProfile);
 router.put(
