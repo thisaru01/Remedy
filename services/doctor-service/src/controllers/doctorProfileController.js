@@ -84,6 +84,13 @@ export const submitOwnDoctorVerification = async (req, res, next) => {
       profile,
     });
   } catch (error) {
+    if (error?.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "This medical license number is already in use by another doctor",
+      });
+    }
+
     if (sendServiceError(res, error)) return;
     return next(error);
   }
