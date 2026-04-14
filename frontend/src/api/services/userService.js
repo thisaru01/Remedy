@@ -1,5 +1,6 @@
 import axios from "@/api/axios";
 
 export const getMe = () => {
-  return axios.get("/users/me");
+  // Uses gateway auth routes: GET /api/auth/me
+  return axios.get("/auth/me");
 };
