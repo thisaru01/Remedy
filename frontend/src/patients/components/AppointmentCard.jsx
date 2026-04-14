@@ -74,6 +74,8 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
   const [cancelling, setCancelling] = useState(false);
   const [cancelled, setCancelled] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -207,7 +209,15 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
             {action === "pay" ? (
               <PaymentButton appointmentId={appt._id} amount={appt?.fee ?? 2500} />
             ) : action === "delete" ? (
-              <Button variant="destructive" size="sm" type="button">Delete</Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                type="button"
+                onClick={() => setDeleteConfirmOpen(true)}
+                disabled={deleting}
+              >
+                {deleting ? "Deleting..." : "Delete"}
+              </Button>
             ) : appt?.status === "completed" || appt?.paymentStatus === "success" ? (
               <div className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs border border-emerald-200 bg-emerald-50 text-emerald-600 font-semibold">
                 <CheckCircle size={14} className="text-emerald-600" />
@@ -292,6 +302,41 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
             disabled={cancelling}
           >
             {cancelling ? "Cancelling..." : "Yes, cancel"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+      <AlertDialogContent size="sm">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete this appointment?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will permanently delete the appointment. This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={deleting}>Keep appointment</AlertDialogCancel>
+          <AlertDialogAction
+            variant="destructive"
+            onClick={async () => {
+              if (!appt?._id) return;
+              try {
+                setDeleting(true);
+                await (await import("@/api/services/appointmentService")).deleteAppointment(appt._id);
+                setCancelled(true);
+                toast.success("Appointment deleted");
+              } catch (err) {
+                console.error("Failed to delete appointment", err);
+                toast.error(err?.message || "Failed to delete appointment");
+              } finally {
+                setDeleting(false);
+                setDeleteConfirmOpen(false);
+              }
+            }}
+            disabled={deleting}
+          >
+            {deleting ? "Deleting..." : "Yes, delete"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
