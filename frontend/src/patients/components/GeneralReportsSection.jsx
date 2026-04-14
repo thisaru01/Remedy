@@ -116,9 +116,10 @@ export default function GeneralReportsSection() {
 
       const response = await uploadPatientReport(formData);
       const createdList = normalizeReportsResponse(response);
-      const created = Array.isArray(createdList) && createdList.length === 1
-        ? createdList[0]
-        : response?.data?.data ?? response?.data?.report ?? null;
+      const created =
+        Array.isArray(createdList) && createdList.length === 1
+          ? createdList[0]
+          : (response?.data?.data ?? response?.data?.report ?? null);
 
       const createdReport = created || createdList[0];
       if (createdReport) {
@@ -126,7 +127,9 @@ export default function GeneralReportsSection() {
       } else {
         // fallback: refresh list
         const refresh = await getMyPatientReports();
-        const all = normalizeReportsResponse(refresh).filter((r) => !r.appointmentId);
+        const all = normalizeReportsResponse(refresh).filter(
+          (r) => !r.appointmentId,
+        );
         setReports(all);
       }
 
@@ -166,8 +169,7 @@ export default function GeneralReportsSection() {
       setUpdateError(null);
       const payload = { title, description };
       const response = await updatePatientReport(editingReport._id, payload);
-      const updated =
-        response?.data?.data || response?.data?.report || payload;
+      const updated = response?.data?.data || response?.data?.report || payload;
 
       setReports((prev) =>
         prev.map((r) =>
