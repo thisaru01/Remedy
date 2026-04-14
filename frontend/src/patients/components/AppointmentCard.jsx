@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { getSchedulesByDoctor } from "@/api/services/scheduleService";
+import { getDoctorDetails } from "@/api/services/doctorService";
 import { useEffect, useState } from "react";
 import { getSchedule } from "@/api/services/scheduleService";
 import PaymentButton from "@/patients/components/PaymentButton";
@@ -68,6 +69,7 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
   const [selectedDoctor, setSelectedDoctor] = useState("");
   const [selectedSchedule, setSelectedSchedule] = useState("");
   const [schedulesList, setSchedulesList] = useState([]);
+  const [doctorDetails, setDoctorDetails] = useState(null);
 
   useEffect(() => {
     let mounted = true;
@@ -112,6 +114,29 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
     };
   }, [appt?.doctorId, appt?.doctor]);
 
+  useEffect(() => {
+    let mounted = true;
+    const loadDoctor = async () => {
+      try {
+        // Prefer the schedule's doctorUserId when available (it's the auth user id)
+        const doctorUserId = schedule?.doctorUserId || (typeof appt?.doctorId === "string" ? appt.doctorId : (appt?.doctor && appt.doctor._id) || null);
+        if (!doctorUserId) return;
+        const res = await getDoctorDetails(doctorUserId);
+        const payload = res?.data ?? {};
+        let data = payload.profile ?? payload.doctor ?? payload;
+        if (data?.profile) data = data.profile;
+        if (mounted) setDoctorDetails(data || null);
+      } catch (e) {
+        // ignore doctor fetch errors
+      }
+    };
+
+    loadDoctor();
+    return () => {
+      mounted = false;
+    };
+  }, [appt?.doctorId, appt?.doctor, schedule]);
+
   const isClickable = appt?.status === "accepted" && appt?.paymentStatus === "success";
 
   return (
@@ -140,11 +165,11 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
         <div className="grid grid-cols-1 gap-2">
           <div>
             <div className="text-xs text-muted-foreground">Doctor</div>
-            <div className="text-sm">{formatDoctorDisplay(appt)}</div>
+            <div className="text-sm">{doctorDetails?.doctorName ? `Dr. ${doctorDetails.doctorName}` : (doctorDetails?.name ? `Dr. ${doctorDetails.name}` : formatDoctorDisplay(appt))}</div>
           </div>
           <div>
             <div className="text-xs text-muted-foreground">Specialty</div>
-            <div className="text-sm">{formatDoctorSpecialty(appt) ?? "-"}</div>
+            <div className="text-sm">{doctorDetails?.specialty ?? doctorDetails?.specialization ?? formatDoctorSpecialty(appt) ?? "-"}</div>
           </div>
           <div>
             <div className="text-xs text-muted-foreground">Fee</div>
