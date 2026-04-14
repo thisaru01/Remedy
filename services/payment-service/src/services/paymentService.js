@@ -90,12 +90,7 @@ export const createPayment = async ({ appointmentId, currency }, requester) => {
     throw error;
   }
 
-  const amount = appointment.fee;
-  if (!Number.isFinite(Number(amount)) || Number(amount) <= 0) {
-    const error = new Error("Appointment fee is missing or invalid");
-    error.statusCode = 400;
-    throw error;
-  }
+  const amount = appointment.fee ?? 2500;
 
   if (String(appointment.patientId) !== String(requester.id)) {
     const error = new Error("You can only pay for your own appointments");
