@@ -122,4 +122,10 @@ const doctorProfileSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+// Index for unique medical license numbers
+doctorProfileSchema.index(
+  { "verification.medicalLicenseNumber": 1 },
+  { unique: true, sparse: true }
+);
+
 export default mongoose.model("DoctorProfile", doctorProfileSchema);

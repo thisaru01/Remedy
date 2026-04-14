@@ -5,6 +5,7 @@ import {
   register,
   updateUserStatus,
   changeMyPassword,
+  getMe,
 } from "../controllers/authController.js";
 import { authorizeRoles, protect } from "../middleware/authMiddleware.js";
 
@@ -13,6 +14,7 @@ const router = express.Router();
 router.post("/register", register);
 router.post("/login", login);
 router.put("/me/password", protect, changeMyPassword);
+router.get("/me", protect, getMe);
 
 // Admin endpoints
 router.get("/users", protect, authorizeRoles("admin"), getUsers);

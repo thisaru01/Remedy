@@ -7,3 +7,7 @@ export const getAppointments = (params) => {
 export const getAppointment = (id) => {
   return axios.get(`/appointments/${id}`);
 };
+
+export const cancelAppointment = (id) => {
+  return axios.patch(`/appointments/${id}/cancel`);
+};

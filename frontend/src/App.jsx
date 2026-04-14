@@ -29,6 +29,8 @@ import DoctorScheduleManage from "@/doctors/pages/DoctorScheduleManage.jsx";
 // Public
 import Home from "@/public/Home.jsx";
 import AuthPage from "@/public/AuthPage.jsx";
+import BookAppointmentsPage from "@/public/book-appointments/BookAppointmentsPage.jsx";
+import RemdedyAiPage from "@/public/remedy-ai/RemdedyAiPage.jsx";
 
 export default function App() {
   return (
@@ -36,6 +38,8 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/auth" element={<AuthPage />} />
+        <Route path="/book-appointments" element={<BookAppointmentsPage />} />
+        <Route path="/remedy-ai" element={<RemdedyAiPage />} />
 
         <Route path="/admin" element={<AdminRouteLayout />}>
           <Route index element={<AdminDashboard />} />

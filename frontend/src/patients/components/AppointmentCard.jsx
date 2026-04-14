@@ -2,12 +2,16 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { getSchedulesByDoctor } from "@/api/services/scheduleService";
+import { cancelAppointment } from "@/api/services/appointmentService";
+import { getDoctorDetails } from "@/api/services/doctorService";
 import { useEffect, useState } from "react";
 import { getSchedule } from "@/api/services/scheduleService";
 import PaymentButton from "@/patients/components/PaymentButton";
+import { toast } from "sonner";
 
 function formatDate(dt) {
   try {
@@ -39,8 +43,6 @@ function formatDoctorDisplay(appt) {
     if (full) return `Dr. ${full}`;
     if (typeof d._id === "string") return d._id;
   }
-
-  return "-";
 }
 
 function formatDoctorSpecialty(appt) {
@@ -68,6 +70,10 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
   const [selectedDoctor, setSelectedDoctor] = useState("");
   const [selectedSchedule, setSelectedSchedule] = useState("");
   const [schedulesList, setSchedulesList] = useState([]);
+  const [doctorDetails, setDoctorDetails] = useState(null);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelled, setCancelled] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -112,7 +118,48 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
     };
   }, [appt?.doctorId, appt?.doctor]);
 
+  useEffect(() => {
+    let mounted = true;
+    const loadDoctor = async () => {
+      try {
+        // Prefer the schedule's doctorUserId when available (it's the auth user id)
+        const doctorUserId = schedule?.doctorUserId || (typeof appt?.doctorId === "string" ? appt.doctorId : (appt?.doctor && appt.doctor._id) || null);
+        if (!doctorUserId) return;
+        const res = await getDoctorDetails(doctorUserId);
+        const payload = res?.data ?? {};
+        let data = payload.profile ?? payload.doctor ?? payload;
+        if (data?.profile) data = data.profile;
+        if (mounted) setDoctorDetails(data || null);
+      } catch (e) {
+        // ignore doctor fetch errors
+      }
+    };
+
+    loadDoctor();
+    return () => {
+      mounted = false;
+    };
+  }, [appt?.doctorId, appt?.doctor, schedule]);
+
   const isClickable = appt?.status === "accepted" && appt?.paymentStatus === "success";
+
+  const handleCancel = async () => {
+    if (!appt?._id) return;
+    try {
+      setCancelling(true);
+      await cancelAppointment(appt._id);
+      setCancelled(true);
+      toast.success("Appointment cancelled");
+    } catch (err) {
+      console.error("Failed to cancel appointment", err);
+      toast.error(err?.message || "Failed to cancel appointment");
+    } finally {
+      setCancelling(false);
+      setConfirmOpen(false);
+    }
+  };
+
+  if (cancelled) return null;
 
   return (
     <>
@@ -140,11 +187,11 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
         <div className="grid grid-cols-1 gap-2">
           <div>
             <div className="text-xs text-muted-foreground">Doctor</div>
-            <div className="text-sm">{formatDoctorDisplay(appt)}</div>
+            <div className="text-sm">{doctorDetails?.doctorName ? `Dr. ${doctorDetails.doctorName}` : (doctorDetails?.name ? `Dr. ${doctorDetails.name}` : formatDoctorDisplay(appt))}</div>
           </div>
           <div>
             <div className="text-xs text-muted-foreground">Specialty</div>
-            <div className="text-sm">{formatDoctorSpecialty(appt) ?? "-"}</div>
+            <div className="text-sm">{doctorDetails?.specialty ?? doctorDetails?.specialization ?? formatDoctorSpecialty(appt) ?? "-"}</div>
           </div>
           <div>
             <div className="text-xs text-muted-foreground">Fee</div>
@@ -182,7 +229,15 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
                 >
                   Reschedule
                 </Button>
-                <Button variant="destructive" size="sm" type="button">Cancel</Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  type="button"
+                  onClick={() => setConfirmOpen(true)}
+                  disabled={cancelling}
+                >
+                  {cancelling ? "Cancelling..." : "Cancel"}
+                </Button>
               </div>
             ) : (
               <Button variant="destructive" size="sm" type="button">Cancel</Button>
@@ -220,6 +275,27 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <AlertDialogContent size="sm">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Cancel this appointment?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will move the appointment to your cancelled list. You can&apos;t undo this action.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={cancelling}>Keep appointment</AlertDialogCancel>
+          <AlertDialogAction
+            variant="destructive"
+            onClick={handleCancel}
+            disabled={cancelling}
+          >
+            {cancelling ? "Cancelling..." : "Yes, cancel"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }
