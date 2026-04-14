@@ -2,13 +2,16 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { getSchedulesByDoctor } from "@/api/services/scheduleService";
+import { cancelAppointment } from "@/api/services/appointmentService";
 import { getDoctorDetails } from "@/api/services/doctorService";
 import { useEffect, useState } from "react";
 import { getSchedule } from "@/api/services/scheduleService";
 import PaymentButton from "@/patients/components/PaymentButton";
+import { toast } from "sonner";
 
 function formatDate(dt) {
   try {
@@ -40,8 +43,6 @@ function formatDoctorDisplay(appt) {
     if (full) return `Dr. ${full}`;
     if (typeof d._id === "string") return d._id;
   }
-
-  return "-";
 }
 
 function formatDoctorSpecialty(appt) {
@@ -70,6 +71,9 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
   const [selectedSchedule, setSelectedSchedule] = useState("");
   const [schedulesList, setSchedulesList] = useState([]);
   const [doctorDetails, setDoctorDetails] = useState(null);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelled, setCancelled] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -139,6 +143,24 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
 
   const isClickable = appt?.status === "accepted" && appt?.paymentStatus === "success";
 
+  const handleCancel = async () => {
+    if (!appt?._id) return;
+    try {
+      setCancelling(true);
+      await cancelAppointment(appt._id);
+      setCancelled(true);
+      toast.success("Appointment cancelled");
+    } catch (err) {
+      console.error("Failed to cancel appointment", err);
+      toast.error(err?.message || "Failed to cancel appointment");
+    } finally {
+      setCancelling(false);
+      setConfirmOpen(false);
+    }
+  };
+
+  if (cancelled) return null;
+
   return (
     <>
     <Card className={isClickable ? "transition-transform duration-150 ease-in-out hover:-translate-y-1 hover:shadow-lg cursor-pointer" : ""}>
@@ -207,7 +229,15 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
                 >
                   Reschedule
                 </Button>
-                <Button variant="destructive" size="sm" type="button">Cancel</Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  type="button"
+                  onClick={() => setConfirmOpen(true)}
+                  disabled={cancelling}
+                >
+                  {cancelling ? "Cancelling..." : "Cancel"}
+                </Button>
               </div>
             ) : (
               <Button variant="destructive" size="sm" type="button">Cancel</Button>
@@ -245,6 +275,27 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <AlertDialogContent size="sm">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Cancel this appointment?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will move the appointment to your cancelled list. You can&apos;t undo this action.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={cancelling}>Keep appointment</AlertDialogCancel>
+          <AlertDialogAction
+            variant="destructive"
+            onClick={handleCancel}
+            disabled={cancelling}
+          >
+            {cancelling ? "Cancelling..." : "Yes, cancel"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }
