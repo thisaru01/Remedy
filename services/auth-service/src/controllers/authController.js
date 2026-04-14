@@ -10,6 +10,7 @@ import {
   validateRegisterInput,
   validateChangePasswordInput,
 } from "../validation/authValidation.js";
+import { getMyProfileService } from "../services/authService.js";
 
 // Register
 export const register = async (req, res, next) => {
@@ -82,6 +83,25 @@ export const changeMyPassword = async (req, res, next) => {
       newPassword,
     });
 
+    return res.status(result.status).json(result.body);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get profile for the currently authenticated user
+export const getMe = async (req, res, next) => {
+  try {
+    const userId = req.user?.id || req.user?._id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Not authorized",
+      });
+    }
+
+    const result = await getMyProfileService({ userId });
     return res.status(result.status).json(result.body);
   } catch (error) {
     next(error);
