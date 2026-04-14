@@ -6,7 +6,7 @@ import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, A
 import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { getSchedulesByDoctor } from "@/api/services/scheduleService";
-import { cancelAppointment } from "@/api/services/appointmentService";
+import { cancelAppointment, deleteAppointment, rescheduleAppointment } from "@/api/services/appointmentService";
 import { getDoctorDetails } from "@/api/services/doctorService";
 import { useEffect, useState } from "react";
 import { getSchedule } from "@/api/services/scheduleService";
@@ -74,6 +74,8 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
   const [cancelling, setCancelling] = useState(false);
   const [cancelled, setCancelled] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -159,6 +161,20 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
     }
   };
 
+  const handleReschedule = async () => {
+    if (!appt?._id || !selectedSchedule) return;
+    try {
+      await rescheduleAppointment(appt._id, selectedSchedule);
+      const updated = schedulesList.find((s) => s._id === selectedSchedule);
+      if (updated) setSchedule(updated);
+      toast.success("Appointment rescheduled");
+      setRescheduleOpen(false);
+    } catch (err) {
+      console.error("Failed to reschedule appointment", err);
+      toast.error(err?.message || "Failed to reschedule appointment");
+    }
+  };
+
   if (cancelled) return null;
 
   return (
@@ -207,7 +223,15 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
             {action === "pay" ? (
               <PaymentButton appointmentId={appt._id} />
             ) : action === "delete" ? (
-              <Button variant="destructive" size="sm" type="button">Delete</Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                type="button"
+                onClick={() => setDeleteConfirmOpen(true)}
+                disabled={deleting}
+              >
+                {deleting ? "Deleting..." : "Delete"}
+              </Button>
             ) : appt?.status === "completed" || appt?.paymentStatus === "success" ? (
               <div className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs border border-emerald-200 bg-emerald-50 text-emerald-600 font-semibold">
                 <CheckCircle size={14} className="text-emerald-600" />
@@ -255,7 +279,7 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
         <div className="px-2 mt-4 space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor={`doctor-${appt._id}`}>Doctor</Label>
-            <Select value={selectedDoctor} onValueChange={setSelectedDoctor}>
+            <Select value={selectedSchedule} onValueChange={setSelectedSchedule}>
               <SelectTrigger id={`schedule-${appt._id}`} className="w-full">
                 <SelectValue placeholder="Select schedule" />
               </SelectTrigger>
@@ -271,7 +295,22 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
         </div>
         <DialogFooter>
           <div />
-          <Button size="sm" onClick={() => setRescheduleOpen(false)}>Close</Button>
+          <Button
+            size="sm"
+            variant="outline"
+            type="button"
+            onClick={() => setRescheduleOpen(false)}
+          >
+            Close
+          </Button>
+          <Button
+            size="sm"
+            type="button"
+            onClick={handleReschedule}
+            disabled={!selectedSchedule}
+          >
+            Save
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -292,6 +331,41 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
             disabled={cancelling}
           >
             {cancelling ? "Cancelling..." : "Yes, cancel"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+      <AlertDialogContent size="sm">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete this appointment?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will permanently delete the appointment. This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={deleting}>Keep appointment</AlertDialogCancel>
+          <AlertDialogAction
+            variant="destructive"
+            onClick={async () => {
+              if (!appt?._id) return;
+              try {
+                setDeleting(true);
+                await deleteAppointment(appt._id);
+                setCancelled(true);
+                toast.success("Appointment deleted");
+              } catch (err) {
+                console.error("Failed to delete appointment", err);
+                toast.error(err?.message || "Failed to delete appointment");
+              } finally {
+                setDeleting(false);
+                setDeleteConfirmOpen(false);
+              }
+            }}
+            disabled={deleting}
+          >
+            {deleting ? "Deleting..." : "Yes, delete"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

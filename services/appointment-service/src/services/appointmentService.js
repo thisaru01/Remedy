@@ -446,8 +446,46 @@ export const rescheduleAppointment = async (id, requester, data) => {
     err.statusCode = 400;
     throw err;
   }
+  // Capture the existing schedule before changing it
+  const previousScheduleId = appointment.scheduleId
+    ? appointment.scheduleId.toString()
+    : null;
 
+  // Ensure the new schedule is still bookable and get its current slotCount
+  const newSchedule = await ensureScheduleIsBookable(scheduleId);
+
+  // If moving away from a previous schedule, increase that schedule's slotCount by 1
+  if (previousScheduleId && previousScheduleId !== scheduleId) {
+    try {
+      const response = await axios.get(
+        `${DOCTOR_SERVICE_BASE_URL}/api/doctor-schedules/schedule/${previousScheduleId}`,
+      );
+
+      const schedule = response.data?.schedule || response.data;
+      if (schedule && Number.isInteger(schedule.slotCount)) {
+        await updateScheduleSlotCountFromAppointment(
+          previousScheduleId,
+          schedule.slotCount + 1,
+        );
+      }
+    } catch (error) {
+      // Do not fail the reschedule if this internal update fails.
+      console.error("Failed to increase schedule slotCount on reschedule", {
+        scheduleId: previousScheduleId,
+        error: error?.message,
+      });
+    }
+  }
+
+  // Decrease the new schedule's slotCount by 1
+  await updateScheduleSlotCountFromAppointment(
+    scheduleId,
+    (newSchedule.slotCount ?? 0) - 1,
+  );
+
+  // Move the appointment to the new schedule and generate a new appointment number
   appointment.scheduleId = scheduleId;
+  appointment.appointmentNumber = await generateAppointmentNumber(scheduleId);
   await appointment.save();
 
   return appointment;
