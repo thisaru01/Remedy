@@ -111,9 +111,11 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
     };
   }, [appt?.doctorId, appt?.doctor]);
 
+  const isClickable = appt?.status === "accepted" && appt?.paymentStatus === "success";
+
   return (
     <>
-    <Card>
+    <Card className={isClickable ? "transition-transform duration-150 ease-in-out hover:-translate-y-1 hover:shadow-lg cursor-pointer" : ""}>
       <CardHeader>
         <div className="flex items-center justify-between gap-4">
           <div>
