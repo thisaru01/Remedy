@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 
 export default function PaymentButton({ 
-  appointmentId = import.meta.env.VITE_TEST_APPOINTMENT_ID, 
-  amount = 5000, 
+  appointmentId, 
+  amount = 2500, 
   currency = "LKR", 
   disabled = false 
 }) {
@@ -54,7 +54,8 @@ export default function PaymentButton({
       <Button
         onClick={handlePayment}
         disabled={isLoading || disabled || !appointmentId}
-        className="w-full sm:w-auto"
+        className="bg-emerald-600 hover:bg-emerald-700 text-white"
+        size="sm"
       >
         {isLoading ? (
           <>

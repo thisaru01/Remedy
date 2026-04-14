@@ -31,6 +31,11 @@ const appointmentSchema = new mongoose.Schema(
       required: true,
       default: "pending",
     },
+    fee: {
+      type: Number,
+      required: true,
+      default: 2500,
+    },
     scheduleId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Schedule",
