@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import PatientReport from "../models/patientReportModel.js";
 import { fetchAppointmentByIdForUser } from "../clients/appointmentClient.js";
 import {
