@@ -1,6 +1,9 @@
 import mongoose from "mongoose";
 import DoctorProfile from "../models/doctorProfileModel.js";
 
+let authDbConnection = null;
+let AuthUserModel = null;
+
 const doctorUpdatableFields = [
   "specialty",
   "contactNo",
@@ -47,6 +50,37 @@ const ensureDoctorRole = ({ userId, role, action }) => {
   if (role !== "doctor") {
     throw createServiceError(403, `Only doctors can ${action}`);
   }
+};
+
+const getAuthUserModel = async () => {
+  if (AuthUserModel) {
+    return AuthUserModel;
+  }
+
+  const authMongoUri = process.env.AUTH_MONGO_URI;
+  if (!authMongoUri) {
+    throw createServiceError(500, "AUTH_MONGO_URI is not configured");
+  }
+
+  if (!authDbConnection || authDbConnection.readyState !== 1) {
+    authDbConnection = await mongoose.createConnection(authMongoUri).asPromise();
+  }
+
+  AuthUserModel = authDbConnection.model(
+    "User",
+    new mongoose.Schema(
+      {
+        name: String,
+        profilePhoto: String,
+      },
+      {
+        collection: "users",
+        versionKey: false,
+      },
+    ),
+  );
+
+  return AuthUserModel;
 };
 
 export const createDoctorProfile = async (payload) => {
@@ -199,6 +233,36 @@ export const getApprovedDoctorProfilesBySpecialty = async ({ specialty }) => {
   return {
     specialty,
     profiles,
+  };
+};
+
+export const getDoctorFullDetails = async ({ doctorUserId }) => {
+  if (!doctorUserId) {
+    throw createServiceError(400, "doctorUserId is required");
+  }
+
+  if (!mongoose.isValidObjectId(doctorUserId)) {
+    throw createServiceError(400, "Invalid doctorUserId");
+  }
+
+  const profileDoc = await DoctorProfile.findOne({ userId: doctorUserId });
+  if (!profileDoc) {
+    throw createServiceError(404, "Doctor profile not found");
+  }
+
+  const User = await getAuthUserModel();
+  const authUser = await User.findById(doctorUserId)
+    .select("name profilePhoto")
+    .lean();
+
+  if (!authUser) {
+    throw createServiceError(404, "Doctor user not found in auth records");
+  }
+
+  return {
+    ...profileDoc.toObject(),
+    doctorName: authUser.name,
+    profilePhoto: authUser.profilePhoto,
   };
 };
 

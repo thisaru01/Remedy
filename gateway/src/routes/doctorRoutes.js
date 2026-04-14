@@ -72,6 +72,15 @@ export const createDoctorRoutes = ({ protect, proxyTo, services }) => {
   );
 
   router.use(
+    "/api/doctor-profiles/details",
+    protect,
+    proxyTo(services.doctor, {
+      addUserContext: true,
+      basePath: "/api/doctor-profiles/details",
+    }),
+  );
+
+  router.use(
     "/api/doctor-profiles/verified",
     protect,
     proxyTo(services.doctor, {
