@@ -12,18 +12,6 @@ const getStripeClient = () => {
   return new Stripe(secretKey);
 };
 
-const getStripeWebhookSecret = () => {
-  const webhookSecret = (process.env.STRIPE_WEBHOOK_SECRET || "").trim();
-
-  if (!webhookSecret) {
-    const error = new Error("STRIPE_WEBHOOK_SECRET is not configured");
-    error.statusCode = 500;
-    throw error;
-  }
-
-  return webhookSecret;
-};
-
 export const createCheckoutSession = async ({
   appointmentId,
   amount,
@@ -55,25 +43,6 @@ export const createCheckoutSession = async ({
   });
 
   return session;
-};
-
-export const constructWebhookEvent = (payload, signature) => {
-  if (!signature) {
-    const error = new Error("Missing Stripe signature");
-    error.statusCode = 400;
-    throw error;
-  }
-
-  const stripe = getStripeClient();
-  const webhookSecret = getStripeWebhookSecret();
-
-  try {
-    return stripe.webhooks.constructEvent(payload, signature, webhookSecret);
-  } catch {
-    const error = new Error("Invalid Stripe webhook signature");
-    error.statusCode = 400;
-    throw error;
-  }
 };
 
 export const retrieveCheckoutSession = async (sessionId) => {

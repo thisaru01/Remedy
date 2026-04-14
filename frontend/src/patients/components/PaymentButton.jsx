@@ -5,7 +5,6 @@ import { Loader2 } from "lucide-react";
 
 export default function PaymentButton({ 
   appointmentId, 
-  amount = 2500, 
   currency = "LKR", 
   disabled = false 
 }) {
@@ -24,7 +23,6 @@ export default function PaymentButton({
     try {
       const response = await createPayment({
         appointmentId,
-        amount,
         currency,
       });
 
