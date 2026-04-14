@@ -111,8 +111,8 @@ const ensureAppointmentEligibility = async ({ appointmentId, requester }) => {
     throw createServiceError(404, "Appointment not found");
   }
 
-  if (appointment.status !== "completed") {
-    throw createServiceError(400, "Prescription can only be issued for completed appointments");
+  if (appointment.paymentStatus !== "success") {
+    throw createServiceError(400, "Prescription can only be issued for appointments with successful payment");
   }
 
   return appointment;
