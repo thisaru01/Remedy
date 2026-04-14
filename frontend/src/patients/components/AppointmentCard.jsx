@@ -6,7 +6,7 @@ import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, A
 import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { getSchedulesByDoctor } from "@/api/services/scheduleService";
-import { cancelAppointment } from "@/api/services/appointmentService";
+import { cancelAppointment, deleteAppointment } from "@/api/services/appointmentService";
 import { getDoctorDetails } from "@/api/services/doctorService";
 import { useEffect, useState } from "react";
 import { getSchedule } from "@/api/services/scheduleService";
@@ -323,7 +323,7 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
               if (!appt?._id) return;
               try {
                 setDeleting(true);
-                await (await import("@/api/services/appointmentService")).deleteAppointment(appt._id);
+                await deleteAppointment(appt._id);
                 setCancelled(true);
                 toast.success("Appointment deleted");
               } catch (err) {
