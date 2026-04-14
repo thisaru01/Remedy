@@ -6,7 +6,7 @@ import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, A
 import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { getSchedulesByDoctor } from "@/api/services/scheduleService";
-import { cancelAppointment, deleteAppointment } from "@/api/services/appointmentService";
+import { cancelAppointment, deleteAppointment, rescheduleAppointment } from "@/api/services/appointmentService";
 import { getDoctorDetails } from "@/api/services/doctorService";
 import { useEffect, useState } from "react";
 import { getSchedule } from "@/api/services/scheduleService";
@@ -161,6 +161,20 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
     }
   };
 
+  const handleReschedule = async () => {
+    if (!appt?._id || !selectedSchedule) return;
+    try {
+      await rescheduleAppointment(appt._id, selectedSchedule);
+      const updated = schedulesList.find((s) => s._id === selectedSchedule);
+      if (updated) setSchedule(updated);
+      toast.success("Appointment rescheduled");
+      setRescheduleOpen(false);
+    } catch (err) {
+      console.error("Failed to reschedule appointment", err);
+      toast.error(err?.message || "Failed to reschedule appointment");
+    }
+  };
+
   if (cancelled) return null;
 
   return (
@@ -265,7 +279,7 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
         <div className="px-2 mt-4 space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor={`doctor-${appt._id}`}>Doctor</Label>
-            <Select value={selectedDoctor} onValueChange={setSelectedDoctor}>
+            <Select value={selectedSchedule} onValueChange={setSelectedSchedule}>
               <SelectTrigger id={`schedule-${appt._id}`} className="w-full">
                 <SelectValue placeholder="Select schedule" />
               </SelectTrigger>
@@ -281,7 +295,22 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
         </div>
         <DialogFooter>
           <div />
-          <Button size="sm" onClick={() => setRescheduleOpen(false)}>Close</Button>
+          <Button
+            size="sm"
+            variant="outline"
+            type="button"
+            onClick={() => setRescheduleOpen(false)}
+          >
+            Close
+          </Button>
+          <Button
+            size="sm"
+            type="button"
+            onClick={handleReschedule}
+            disabled={!selectedSchedule}
+          >
+            Save
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

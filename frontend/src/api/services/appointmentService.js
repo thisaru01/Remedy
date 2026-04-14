@@ -15,3 +15,7 @@ export const cancelAppointment = (id) => {
 export const deleteAppointment = (id) => {
   return axios.delete(`/appointments/${id}`);
 };
+
+export const rescheduleAppointment = (id, scheduleId) => {
+  return axios.patch(`/appointments/${id}/reschedule`, { scheduleId });
+};
