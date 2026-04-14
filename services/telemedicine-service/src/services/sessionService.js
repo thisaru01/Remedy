@@ -34,12 +34,12 @@ export const __resetSessionServiceDepsForTest = () => {
   Object.assign(serviceDeps, defaultDeps);
 };
 
-export const validateCreateSessionPayload = ({ appointmentId, patientId, doctorId, scheduledAt }) => {
-  if (!appointmentId || !patientId || !doctorId || !scheduledAt) {
+export const validateCreateSessionPayload = ({ appointmentId, patientId, doctorId }) => {
+  if (!appointmentId || !patientId || !doctorId) {
     return {
       error: {
         status: 400,
-        message: "Missing required fields: appointmentId, patientId, doctorId, scheduledAt",
+        message: "Missing required fields: appointmentId, patientId, doctorId",
       },
     };
   }
@@ -147,7 +147,7 @@ export const parsePaginationQuery = (query) => {
   return { page, limit, skip };
 };
 
-export const getPaginatedSessions = async ({ filter, query, sort = { scheduledAt: -1 } }) => {
+export const getPaginatedSessions = async ({ filter, query, sort = { createdAt: -1 } }) => {
   const { page, limit, skip } = parsePaginationQuery(query);
 
   const [sessions, total] = await Promise.all([

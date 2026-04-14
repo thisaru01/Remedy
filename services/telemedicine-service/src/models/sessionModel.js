@@ -41,10 +41,6 @@ const sessionSchema = new mongoose.Schema(
       enum: ["scheduled", "active", "ended", "cancelled"],
       default: "scheduled",
     },
-    scheduledAt: {
-      type: Date,
-      required: true,
-    },
     startedAt: {
       type: Date,
       default: null,
@@ -58,8 +54,6 @@ const sessionSchema = new mongoose.Schema(
 );
 
 // Indexes used by the most common session list/look-up queries
-sessionSchema.index({ patientId: 1, scheduledAt: -1 });
-sessionSchema.index({ doctorId: 1, scheduledAt: -1 });
 sessionSchema.index({ appointmentId: 1 }, { unique: true });
 
 export default mongoose.model("Session", sessionSchema);

@@ -7,6 +7,7 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 import { getSchedulesByDoctor } from "@/api/services/scheduleService";
 import { useEffect, useState } from "react";
 import { getSchedule } from "@/api/services/scheduleService";
+import PaymentButton from "@/patients/components/PaymentButton";
 
 function formatDate(dt) {
   try {
@@ -157,7 +158,7 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
           <div className="text-xs text-muted-foreground">{formatDate(appt.createdAt)}</div>
           <div>
             {action === "pay" ? (
-              <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" size="sm" type="button">Pay Now</Button>
+              <PaymentButton appointmentId={appt._id} amount={appt?.fee ?? 2500} />
             ) : action === "delete" ? (
               <Button variant="destructive" size="sm" type="button">Delete</Button>
             ) : appt?.status === "completed" || appt?.paymentStatus === "success" ? (

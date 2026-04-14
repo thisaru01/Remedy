@@ -6,6 +6,7 @@ import {
   getPayments,
   getPaymentById,
   getPaymentByAppointmentId,
+  verifyPayment,
 } from "../controllers/paymentController.js";
 
 const router = express.Router();
@@ -13,6 +14,7 @@ const router = express.Router();
 router.use(internalAuthMiddleware);
 
 router.post("/", createPayment);
+router.get("/verify", verifyPayment);
 router.get("/", getPayments);
 router.get("/appointment/:appointmentId", getPaymentByAppointmentId);
 router.get("/:id", getPaymentById);
