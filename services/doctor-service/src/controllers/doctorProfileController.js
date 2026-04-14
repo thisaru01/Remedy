@@ -123,6 +123,22 @@ export const getApprovedDoctorProfilesBySpecialty = async (req, res, next) => {
   }
 };
 
+export const getDoctorFullDetails = async (req, res, next) => {
+  try {
+    const profile = await doctorProfileService.getDoctorFullDetails({
+      doctorUserId: req.params.id,
+    });
+
+    return res.status(200).json({
+      success: true,
+      profile,
+    });
+  } catch (error) {
+    if (sendServiceError(res, error)) return;
+    return next(error);
+  }
+};
+
 export const getDoctorProfilesByVerificationStatus = async (req, res, next) => {
   try {
     const { verificationStatus, profiles } =
