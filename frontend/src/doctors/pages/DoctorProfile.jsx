@@ -5,7 +5,7 @@ import { ProfileEditForm } from "../components/ProfileEditForm";
 import { VerificationBanner } from "../components/VerificationBanner";
 import { VerificationForm } from "../components/VerificationForm";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, RefreshCcw } from "lucide-react";
+import { AlertCircle, RefreshCcw, ChevronRight, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function DoctorProfile() {
@@ -53,6 +53,21 @@ export default function DoctorProfile() {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+      {/* Breadcrumbs */}
+      <nav className="flex items-center gap-2 text-sm text-muted-foreground/60 font-medium px-1">
+        <Home className="w-3.5 h-3.5" />
+        <ChevronRight className="w-4 h-4 opacity-30" />
+        <span>Dashboard</span>
+        <ChevronRight className="w-4 h-4 opacity-30" />
+        <span className="text-muted-foreground/40">Doctor Profile</span>
+        {profile?.user?.name && (
+          <>
+            <ChevronRight className="w-4 h-4 opacity-30" />
+            <span className="text-primary/70 font-semibold">{profile.user.name.startsWith("Dr.") ? profile.user.name : `Dr. ${profile.user.name}`}</span>
+          </>
+        )}
+      </nav>
+
       {isUnverified && <VerificationBanner />}
 
       <ProfileHeader

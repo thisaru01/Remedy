@@ -4,7 +4,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Edit2, CheckCircle2, AlertCircle, Clock } from "lucide-react";
 
 export function ProfileHeader({ profile, isEditing, onToggleEdit }) {
-  const name = profile?.user?.name || "Doctor";
+  const rawName = profile?.user?.name || "Doctor";
+  const name =
+    rawName !== "Doctor" && !rawName.startsWith("Dr.")
+      ? `Dr. ${rawName}`
+      : rawName;
   const specialty = profile?.specialty || "General Physician";
   const status = profile?.verification?.status || "not_submitted";
 
