@@ -103,6 +103,32 @@ export const createDoctorProfile = async (payload) => {
   });
 };
 
+const attachUserToProfile = async (profileDoc) => {
+  if (!profileDoc) return null;
+
+  const profile = profileDoc.toObject ? profileDoc.toObject() : profileDoc;
+  const userId = profile.userId;
+
+  try {
+    const User = await getAuthUserModel();
+    const authUser = await User.findById(userId)
+      .select("name profilePhoto")
+      .lean();
+
+    if (authUser) {
+      profile.user = {
+        name: authUser.name,
+        photo: authUser.profilePhoto,
+      };
+    }
+  } catch (error) {
+    console.error(`Failed to attach user to profile ${userId}:`, error.message);
+    // Continue without user info rather than failing the whole request
+  }
+
+  return profile;
+};
+
 export const getOwnDoctorProfile = async ({ userId, role }) => {
   ensureDoctorRole({ userId, role, action: "access doctor profiles" });
 
@@ -111,7 +137,7 @@ export const getOwnDoctorProfile = async ({ userId, role }) => {
     throw createServiceError(404, "Doctor profile not found");
   }
 
-  return profile;
+  return attachUserToProfile(profile);
 };
 
 export const updateOwnDoctorProfile = async ({ userId, role, updates }) => {
@@ -140,7 +166,7 @@ export const updateOwnDoctorProfile = async ({ userId, role, updates }) => {
     throw createServiceError(400, "No valid profile fields were provided");
   }
 
-  return DoctorProfile.findOneAndUpdate(
+  const updatedProfile = await DoctorProfile.findOneAndUpdate(
     { userId },
     {
       $set: set,
@@ -150,6 +176,8 @@ export const updateOwnDoctorProfile = async ({ userId, role, updates }) => {
       runValidators: true,
     },
   );
+
+  return attachUserToProfile(updatedProfile);
 };
 
 export const submitOwnDoctorVerification = async ({
@@ -193,7 +221,7 @@ export const submitOwnDoctorVerification = async ({
     );
   }
 
-  return DoctorProfile.findOneAndUpdate(
+  const updatedProfile = await DoctorProfile.findOneAndUpdate(
     { userId },
     {
       $setOnInsert: { userId },
@@ -212,6 +240,8 @@ export const submitOwnDoctorVerification = async ({
       runValidators: true,
     },
   );
+
+  return attachUserToProfile(updatedProfile);
 };
 
 export const getApprovedDoctorProfiles = async () => {
@@ -298,9 +328,13 @@ export const getDoctorProfilesByVerificationStatus = async ({
     "verification.status": verificationStatus,
   }).sort({ updatedAt: -1 });
 
+  const profilesWithUsers = await Promise.all(
+    profiles.map((profile) => attachUserToProfile(profile)),
+  );
+
   return {
     verificationStatus,
-    profiles,
+    profiles: profilesWithUsers,
   };
 };
 

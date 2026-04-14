@@ -3,9 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { ShieldCheck, Loader2, Link as LinkIcon, Building } from "lucide-react";
+import { ShieldCheck, Loader2, Link as LinkIcon, Building, AlertCircle } from "lucide-react";
 
-export function VerificationForm({ onSubmit, loading }) {
+export function VerificationForm({ onSubmit, loading, error }) {
   const [formData, setFormData] = useState({
     medicalLicenseNumber: "",
     medicalCouncil: "",
@@ -96,6 +96,13 @@ export function VerificationForm({ onSubmit, loading }) {
               <p className="text-xs text-destructive">{errors.licenseDocumentUrl}</p>
             )}
           </div>
+
+          {error && (
+            <div className="flex items-center gap-3 p-4 rounded-xl border border-destructive/20 bg-destructive/5 text-destructive animate-in fade-in slide-in-from-top-1">
+              <AlertCircle className="w-5 h-5 shrink-0" />
+              <p className="text-sm font-medium">{error}</p>
+            </div>
+          )}
         </CardContent>
         <CardFooter>
           <Button type="submit" className="w-full gap-2" disabled={loading}>

@@ -120,18 +120,26 @@ export const updateOwnDoctorDayAvailability = async (req, res, next) => {
       });
     }
 
-    const schedule = await updateScheduleAvailabilityForDoctor({
-      doctorUserId: context.userId,
-      scheduleId,
-      isAvailable,
-    });
-
-    if (!schedule) {
+    const existingSchedule = await getScheduleByScheduleId(scheduleId);
+    if (!existingSchedule || existingSchedule.doctorUserId.toString() !== context.userId) {
       return res.status(404).json({
         success: false,
         message: "Schedule not found or does not belong to this doctor",
       });
     }
+
+    if (existingSchedule.slotCount < 6 && isAvailable === false) {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot mark schedule as unavailable because it has active appointments.",
+      });
+    }
+
+    const schedule = await updateScheduleAvailabilityForDoctor({
+      doctorUserId: context.userId,
+      scheduleId,
+      isAvailable,
+    });
 
     return res.status(200).json({
       success: true,
@@ -250,6 +258,27 @@ export const updateOwnDoctorSchedule = async (req, res, next) => {
 
     if (!validateUpdateSchedulePayload(res, req.body)) return;
 
+    const existingSchedule = await getScheduleByScheduleId(scheduleId);
+    if (!existingSchedule || existingSchedule.doctorUserId.toString() !== context.userId) {
+      return res.status(404).json({
+        success: false,
+        message: "Schedule not found or does not belong to this doctor",
+      });
+    }
+
+    if (existingSchedule.slotCount < 6) {
+      if (
+        (day !== undefined && day !== existingSchedule.day) ||
+        (startTime !== undefined && startTime !== existingSchedule.startTime) ||
+        isAvailable === false
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Cannot modify schedule timing or mark as unavailable because it has active appointments.",
+        });
+      }
+    }
+
     const schedule = await updateDoctorSchedule({
       scheduleId,
       doctorUserId: context.userId,
@@ -257,13 +286,6 @@ export const updateOwnDoctorSchedule = async (req, res, next) => {
       startTime,
       isAvailable,
     });
-
-    if (!schedule) {
-      return res.status(404).json({
-        success: false,
-        message: "Schedule not found or does not belong to this doctor",
-      });
-    }
 
     return res.status(200).json({
       success: true,
