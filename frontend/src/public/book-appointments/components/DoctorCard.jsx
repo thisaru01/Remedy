@@ -1,11 +1,12 @@
 import { MapPin, Stethoscope } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import BookingDialog from "./BookingDialog.jsx";
 import { useAuth } from "@/context/auth/useAuth";
 
 function getInitials(name = "") {
@@ -24,6 +25,7 @@ function getInitials(name = "") {
 export default function DoctorCard({ doctor }) {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const [bookingOpen, setBookingOpen] = useState(false);
 
   const name = doctor?.doctorName || doctor?.user?.name || "Doctor";
   const photo = doctor?.profilePhoto || doctor?.user?.profilePhoto || "";
@@ -44,14 +46,15 @@ export default function DoctorCard({ doctor }) {
 
   const initials = getInitials(name);
 
-  function handleBookClick() {
+  const doctorId = doctor?.userId || doctor?.user?._id || doctor?._id || null;
+
+  function openBookingDialog() {
     if (!isAuthenticated) {
       navigate("/auth?redirect=/book-appointments");
       return;
     }
 
-    // TODO: Wire this up to a dedicated booking flow (schedule selection + POST /appointments)
-    navigate("");
+    setBookingOpen(true);
   }
 
   return (
@@ -112,10 +115,11 @@ export default function DoctorCard({ doctor }) {
       </CardContent>
 
       <CardFooter className="mt-auto flex flex-col gap-2 border-t p-4 sm:flex-row sm:justify-end">
-        <Button className="w-full sm:w-auto" onClick={handleBookClick}>
+        <Button className="w-full sm:w-auto" onClick={openBookingDialog}>
           Book Appointment
         </Button>
       </CardFooter>
+      <BookingDialog doctor={doctor} open={bookingOpen} onOpenChange={setBookingOpen} />
     </Card>
   );
 }
