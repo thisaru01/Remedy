@@ -38,6 +38,8 @@ export function ProfileHeader({ profile, isEditing, onToggleEdit }) {
     }
   };
 
+  const isUnverified = status === "not_submitted";
+
   return (
     <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between rounded-xl border bg-card p-6 shadow-xs border-white/5 bg-linear-to-b from-white/[0.03] to-transparent backdrop-blur-sm">
       <div className="flex items-center gap-5">
@@ -59,7 +61,9 @@ export function ProfileHeader({ profile, isEditing, onToggleEdit }) {
       <Button
         onClick={onToggleEdit}
         variant={isEditing ? "outline" : "default"}
-        className="gap-2 transition-all active:scale-95"
+        disabled={isUnverified && !isEditing}
+        title={isUnverified ? "Submit verification details to unlock profile editing" : ""}
+        className="gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <Edit2 className="w-4 h-4" />
         {isEditing ? "View Profile" : "Edit Profile"}

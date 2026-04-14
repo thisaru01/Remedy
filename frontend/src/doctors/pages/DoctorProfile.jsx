@@ -2,6 +2,8 @@ import { useDoctorProfile } from "@/hooks/useDoctorProfile";
 import { ProfileHeader } from "../components/ProfileHeader";
 import { ProfileDetailsView } from "../components/ProfileDetailsView";
 import { ProfileEditForm } from "../components/ProfileEditForm";
+import { VerificationBanner } from "../components/VerificationBanner";
+import { VerificationForm } from "../components/VerificationForm";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,9 +14,11 @@ export default function DoctorProfile() {
     loading,
     error,
     saving,
+    isVerifying,
     isEditing,
     toggleEdit,
     updateProfile,
+    submitVerification,
     refreshProfile,
   } = useDoctorProfile();
 
@@ -45,6 +49,8 @@ export default function DoctorProfile() {
     );
   }
 
+  const isUnverified = profile?.verification?.status === "not_submitted";
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
       <div className="space-y-2">
@@ -54,13 +60,19 @@ export default function DoctorProfile() {
         </p>
       </div>
 
+      {isUnverified && <VerificationBanner />}
+
       <ProfileHeader
         profile={profile}
         isEditing={isEditing}
         onToggleEdit={toggleEdit}
       />
 
-      {isEditing ? (
+      {isUnverified ? (
+        <div className="max-w-2xl mx-auto py-4">
+          <VerificationForm onSubmit={submitVerification} loading={isVerifying} />
+        </div>
+      ) : isEditing ? (
         <ProfileEditForm
           profile={profile}
           saving={saving}
