@@ -53,13 +53,6 @@ export default function DoctorProfile() {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Professional Profile</h1>
-        <p className="text-muted-foreground">
-          Manage your clinical background, expertise, and digital identity.
-        </p>
-      </div>
-
       {isUnverified && <VerificationBanner />}
 
       <ProfileHeader
