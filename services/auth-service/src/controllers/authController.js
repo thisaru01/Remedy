@@ -9,8 +9,12 @@ import {
   validateLoginInput,
   validateRegisterInput,
   validateChangePasswordInput,
+  validateUpdateMyProfileInput,
 } from "../validation/authValidation.js";
-import { getMyProfileService } from "../services/authService.js";
+import {
+  getMyProfileService,
+  updateMyProfileService,
+} from "../services/authService.js";
 
 // Register
 export const register = async (req, res, next) => {
@@ -102,6 +106,32 @@ export const getMe = async (req, res, next) => {
     }
 
     const result = await getMyProfileService({ userId });
+    return res.status(result.status).json(result.body);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Update profile for the currently authenticated user (name, email)
+export const updateMe = async (req, res, next) => {
+  try {
+    const validationError = validateUpdateMyProfileInput(req.body);
+    if (validationError) {
+      return res.status(validationError.status).json(validationError.body);
+    }
+
+    const userId = req.user?.id || req.user?._id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Not authorized",
+      });
+    }
+
+    const { name, email } = req.body ?? {};
+
+    const result = await updateMyProfileService({ userId, name, email });
     return res.status(result.status).json(result.body);
   } catch (error) {
     next(error);
