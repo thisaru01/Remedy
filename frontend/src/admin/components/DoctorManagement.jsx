@@ -213,81 +213,78 @@ export function DoctorManagement() {
       </Tabs>
 
       {/* Review Dialog */}
+      {/* Review Dialog */}
       <Dialog open={isReviewOpen} onOpenChange={setIsReviewOpen}>
-        <DialogContent className="max-w-2xl border-white/10 bg-linear-to-b from-card to-card/95 backdrop-blur-xl p-0 overflow-hidden rounded-2xl shadow-2xl ring-1 ring-white/10">
-          <DialogHeader className="p-8 border-b border-white/5 bg-white/[0.01]">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-2xl bg-primary/10 text-primary">
-                <FileText className="w-6 h-6" />
-              </div>
-              <div>
-                <DialogTitle className="text-2xl font-black italic tracking-tighter leading-none">Review Profile</DialogTitle>
-                <DialogDescription className="text-sm font-medium text-muted-foreground mt-1 tracking-tight">
-                  Verification details for {selectedDoctor?.user?.name || "the doctor"}.
-                </DialogDescription>
-              </div>
-            </div>
+        <DialogContent className="max-w-xl sm:max-w-2xl rounded-xl">
+          <DialogHeader className="pb-4 border-b">
+            <DialogTitle className="text-xl flex items-center gap-2">
+              <FileText className="w-5 h-5 text-primary" />
+              Review Profile: {selectedDoctor?.user?.name || "Doctor"}
+            </DialogTitle>
+            <DialogDescription>
+              Please verify the professional credentials for this doctor before taking action.
+            </DialogDescription>
           </DialogHeader>
 
-          <div className="p-8 space-y-8">
-            <div className="grid grid-cols-2 gap-8 text-[11px] uppercase tracking-[0.2em] font-bold text-muted-foreground">
-              <div className="space-y-4">
-                <span className="block opacity-40">Medical License Number</span>
-                <span className="block text-lg font-black text-foreground tracking-tight normal-case opacity-100 font-mono italic">
-                  {selectedDoctor?.verification?.medicalLicenseNumber || "NOT PROVIDED"}
-                </span>
+          <div className="py-6 space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-muted/30 p-6 rounded-lg border">
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Medical License Number</p>
+                <p className="text-lg font-bold tracking-tight text-foreground font-mono">
+                  {selectedDoctor?.verification?.medicalLicenseNumber || "Not Provided"}
+                </p>
               </div>
-              <div className="space-y-4">
-                <span className="block opacity-40">Medical Council</span>
-                <span className="block text-lg font-black text-foreground tracking-tight normal-case opacity-100 italic">
-                  {selectedDoctor?.verification?.medicalCouncil || "NOT PROVIDED"}
-                </span>
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Medical Council</p>
+                <p className="text-lg font-bold tracking-tight text-foreground">
+                  {selectedDoctor?.verification?.medicalCouncil || "Not Provided"}
+                </p>
               </div>
             </div>
 
             {selectedDoctor?.verification?.licenseDocumentUrl && (
-              <div className="relative group">
-                <div className="absolute -inset-4 bg-primary/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-500 -z-10 blur-xl" />
-                <div className="p-6 rounded-2xl border border-white/5 bg-white/[0.01] transition-transform duration-500 group-hover:scale-[1.01]">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20">
-                        <FileText className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <p className="font-black italic text-base tracking-tighter">Professional Document</p>
-                        <p className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-widest mt-1">Uploaded Evidence (PDF/Image)</p>
-                      </div>
-                    </div>
-                    <Button asChild variant="ghost" size="sm" className="gap-2 hover:bg-primary/10 hover:text-primary font-bold">
-                      <a href={selectedDoctor?.verification?.licenseDocumentUrl} target="_blank" rel="noopener noreferrer">
-                        View Original <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
-                    </Button>
+              <div className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/10 transition-colors">
+                <div className="flex items-center gap-4">
+                  <div className="p-2.5 bg-primary/10 text-primary rounded-lg">
+                    <FileText className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-sm">License Document</h4>
+                    <p className="text-xs text-muted-foreground mt-0.5">Original uploaded file</p>
                   </div>
                 </div>
+                <Button asChild variant="outline" size="sm" className="gap-2 shrink-0">
+                  <a href={selectedDoctor?.verification?.licenseDocumentUrl} target="_blank" rel="noopener noreferrer">
+                    View Document <ExternalLink className="w-4 h-4" />
+                  </a>
+                </Button>
               </div>
             )}
           </div>
 
-          <DialogFooter className="p-8 border-t border-white/5 bg-white/[0.01] flex sm:justify-between items-center gap-4">
-            <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40 italic flex-1 truncate">
-              STATUS: {selectedDoctor?.verification?.status?.toUpperCase()}
+          <DialogFooter className="pt-4 border-t flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider bg-secondary/50 px-3 py-1.5 rounded-full border">
+              Status: <span className={
+                selectedDoctor?.verification?.status === "approved" ? "text-emerald-600 font-bold ml-1" :
+                selectedDoctor?.verification?.status === "rejected" ? "text-rose-600 font-bold ml-1" :
+                "text-amber-600 font-bold ml-1"
+              }>{selectedDoctor?.verification?.status?.toUpperCase()}</span>
             </div>
             {selectedDoctor?.verification?.status === "submitted" && (
-              <div className="flex items-center gap-3">
+              <div className="flex w-full sm:w-auto items-center gap-3">
                 <Button 
-                  variant="outline" 
-                  className="rounded-xl px-6 py-5 h-auto border-rose-500/20 text-rose-500 hover:bg-rose-500/10 hover:border-rose-500/40 font-bold gap-2 shadow-sm transition-all duration-300"
-                  onClick={() => handleAction("reject", selectedDoctor?._id)}
+                  variant="destructive" 
+                  className="w-full sm:w-auto gap-2"
+                  onClick={() => handleAction("reject", selectedDoctor?.userId)}
                 >
-                  <XCircle className="w-4 h-4" /> REJECT
+                  <XCircle className="w-4 h-4" /> Reject
                 </Button>
                 <Button 
-                  className="rounded-xl px-10 py-5 h-auto bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-emerald-500/50 hover:scale-[1.02] active:scale-95 font-black italic tracking-tighter gap-2 transition-all duration-500"
-                  onClick={() => handleAction("approve", selectedDoctor?._id)}
+                  variant="default"
+                  className="w-full sm:w-auto gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                  onClick={() => handleAction("approve", selectedDoctor?.userId)}
                 >
-                  <CheckCircle className="w-4 h-4" /> APPROVE ACCOUNT
+                  <CheckCircle className="w-4 h-4" /> Approve
                 </Button>
               </div>
             )}
