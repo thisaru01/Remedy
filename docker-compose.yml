@@ -7,7 +7,6 @@ services:
     restart: unless-stopped
     environment:
       VITE_API_BASE_URL: http://localhost:8080/api
-      VITE_TEST_APPOINTMENT_ID: ${VITE_TEST_APPOINTMENT_ID:-}
     depends_on:
       - gateway
     ports:
