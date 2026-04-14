@@ -165,14 +165,14 @@ export const getPaginatedSessions = async ({ filter, query, sort = { createdAt: 
   };
 };
 
-export const validateWithAppointmentService = async (appointmentId) => {
+export const validateWithAppointmentService = async (appointmentId, { userId, userRole } = {}) => {
   if (String(process.env.SKIP_APPOINTMENT_VALIDATION).trim() === "true") {
     console.warn("Skipping appointment validation");
     return true;
   }
 
   try {
-    const appointment = await fetchAppointmentById(appointmentId);
+    const appointment = await fetchAppointmentById(appointmentId, { userId, userRole });
 
     if (appointment.paymentStatus !== "success") {
       console.error(`Appointment ${appointmentId} has not been paid yet.`);

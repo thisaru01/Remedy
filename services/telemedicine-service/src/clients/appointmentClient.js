@@ -21,19 +21,21 @@ const getAppointmentServiceTimeoutMs = () => {
   return parsed;
 };
 
-export const fetchAppointmentById = async (appointmentId) => {
+export const fetchAppointmentById = async (appointmentId, { userId, userRole } = {}) => {
   const appointmentServiceUrl = getAppointmentServiceUrl();
   const timeoutMs = getAppointmentServiceTimeoutMs();
 
+  const headers = {
+    "x-internal-token": process.env.INTERNAL_SERVICE_TOKEN,
+  };
+
+  if (userId) headers["x-user-id"] = userId;
+  if (userRole) headers["x-user-role"] = userRole;
+
   const response = await axios.get(
     `${appointmentServiceUrl}/api/appointments/${appointmentId}`,
-    {
-      headers: {
-        "x-internal-token": process.env.INTERNAL_SERVICE_TOKEN,
-      },
-      timeout: timeoutMs,
-    },
+    { headers, timeout: timeoutMs },
   );
 
-  return response.data?.data;
+  return response.data?.appointment;
 };
