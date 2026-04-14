@@ -27,6 +27,7 @@ services:
       APPOINTMENT_SERVICE_URL: http://appointment-service:5000
       PAYMENT_SERVICE_URL: http://payment-service:5000
       TELEMEDICINE_SERVICE_URL: http://telemedicine-service:5000
+      AI_SERVICE_URL: http://ai-service:5000
     depends_on:
       - auth-service
       - patient-service
@@ -159,3 +160,16 @@ services:
       EMAIL_FROM: ${EMAIL_FROM}
     ports:
       - "5007:5007"
+
+  ai-service:
+    build:
+      context: ./services/ai-service
+    container_name: remedy-ai-service
+    restart: unless-stopped
+    environment:
+      PORT: 5000
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-dev_internal_token_change_me}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+    ports:
+      - "5008:5000"
