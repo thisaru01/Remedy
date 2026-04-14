@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import {
   getApprovedDoctors,
   getApprovedDoctorsBySpecialty,
+  getDoctorDetails,
 } from "@/api/services/doctorService";
 
 export function useFindDoctors({ search = "", specialty = "" } = {}) {
@@ -26,6 +27,41 @@ export function useFindDoctors({ search = "", specialty = "" } = {}) {
 
       const raw = response?.data?.profiles ?? response?.data ?? [];
       let list = Array.isArray(raw) ? raw : [];
+
+      // Enrich doctor profiles with display name/photo where possible
+      try {
+        const enriched = await Promise.all(
+          list.map(async (doctor) => {
+            const userId =
+              doctor.userId || doctor.user?._id || doctor._id || null;
+            if (!userId) return doctor;
+
+            try {
+              const detailResp = await getDoctorDetails(userId);
+              const detail =
+                detailResp?.data?.profile || detailResp?.data?.data;
+              if (!detail) return doctor;
+
+              return {
+                ...doctor,
+                doctorName:
+                  detail.doctorName ||
+                  detail.user?.name ||
+                  doctor.doctorName,
+                profilePhoto:
+                  detail.profilePhoto ||
+                  detail.user?.profilePhoto ||
+                  doctor.profilePhoto,
+              };
+            } catch {
+              return doctor;
+            }
+          }),
+        );
+        list = enriched;
+      } catch {
+        // If enrichment fails, continue with raw list
+      }
 
       const query = search.trim().toLowerCase();
       if (query) {
