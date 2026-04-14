@@ -21,12 +21,13 @@ function UploadReportDialog({
   onDescriptionChange,
   onFileChange,
   onSubmit,
+  dialogTitle = "Add a general report",
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add a general report</DialogTitle>
+          <DialogTitle>{dialogTitle}</DialogTitle>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="space-y-1.5">

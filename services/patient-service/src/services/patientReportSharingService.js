@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import PatientReport from "../models/patientReportModel.js";
 import { fetchAppointmentByIdForUser } from "../clients/appointmentClient.js";
+import { fetchUserByIdInternal } from "../clients/authClient.js";
 import {
   parseExpiresAt,
   validateReportIdFormat,
@@ -184,11 +185,46 @@ export const getSharedWithMePatientReportsService = async (user) => {
     },
   }).sort({ createdAt: -1 });
 
+  // Enrich each report with basic patient info (name, profile photo)
+  const uniqueUserIds = [
+    ...new Set(
+      reports
+        .map((r) => (r && r.userId ? String(r.userId) : null))
+        .filter(Boolean),
+    ),
+  ];
+
+  const userMap = {};
+  for (const id of uniqueUserIds) {
+    try {
+      const userRecord = await fetchUserByIdInternal(id);
+      if (userRecord) {
+        userMap[id] = {
+          name: userRecord.name,
+          profilePhoto: userRecord.profilePhoto,
+        };
+      }
+    } catch (error) {
+      // If user lookup fails, skip enrichment for that id
+      // and continue processing other records.
+    }
+  }
+
+  const enrichedReports = reports.map((report) => {
+    const plain = report.toObject({ virtuals: false });
+    const userInfo = userMap[String(report.userId)] || null;
+    if (userInfo) {
+      plain.patientName = userInfo.name;
+      plain.patientProfilePhoto = userInfo.profilePhoto;
+    }
+    return plain;
+  });
+
   return {
     status: 200,
     body: {
       success: true,
-      data: reports,
+      data: enrichedReports,
     },
   };
 };

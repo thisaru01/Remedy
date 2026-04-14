@@ -6,6 +6,7 @@ import {
   updateUserStatus,
   changeMyPassword,
   getMe,
+  updateMe,
 } from "../controllers/authController.js";
 import { authorizeRoles, protect } from "../middleware/authMiddleware.js";
 
@@ -15,6 +16,7 @@ router.post("/register", register);
 router.post("/login", login);
 router.put("/me/password", protect, changeMyPassword);
 router.get("/me", protect, getMe);
+router.put("/me", protect, updateMe);
 
 // Admin endpoints
 router.get("/users", protect, authorizeRoles("admin"), getUsers);

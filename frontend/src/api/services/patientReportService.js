@@ -5,6 +5,16 @@ export const getMyPatientReports = () => {
   return axios.get("/patient-reports");
 };
 
+// Get all reports that are shared with the authenticated doctor
+export const getSharedWithMePatientReports = () => {
+  return axios.get("/patient-reports/shared-with-me");
+};
+
+// Get all reports linked to a specific appointment for the current user
+export const getReportsForAppointment = (appointmentId) => {
+  return axios.get(`/patient-reports/by-appointment/${appointmentId}`);
+};
+
 // Upload a new patient report (general or linked to an appointment)
 // `formData` should include: report (File), title (string), optional description, optional appointmentId
 export const uploadPatientReport = (formData) => {

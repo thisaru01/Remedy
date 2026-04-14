@@ -137,15 +137,17 @@ export default function PatientReportCard({
               </a>
             </Button>
           )}
-          <Button
-            variant="outline"
-            size="xs"
-            type="button"
-            className="h-7 px-2 text-[0.75rem]"
-            onClick={() => onShare?.(report)}
-          >
-            Share
-          </Button>
+          {onShare && (
+            <Button
+              variant="outline"
+              size="xs"
+              type="button"
+              className="h-7 px-2 text-[0.75rem]"
+              onClick={() => onShare(report)}
+            >
+              Share
+            </Button>
+          )}
         </div>
 
         <div className="flex items-center gap-1.5">

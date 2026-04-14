@@ -118,6 +118,46 @@ export const validateChangePasswordInput = (body) => {
   return null;
 };
 
+export const validateUpdateMyProfileInput = (body) => {
+  const { name, email } = body ?? {};
+
+  if (name === undefined && email === undefined) {
+    return {
+      status: 400,
+      body: {
+        success: false,
+        message: "At least one of name or email must be provided",
+      },
+    };
+  }
+
+  if (name !== undefined) {
+    if (typeof name !== "string" || !name.trim()) {
+      return {
+        status: 400,
+        body: {
+          success: false,
+          message: "name must be a non-empty string when provided",
+        },
+      };
+    }
+  }
+
+  if (email !== undefined) {
+    if (typeof email !== "string" || !email.trim()) {
+      return {
+        status: 400,
+        body: {
+          success: false,
+          message: "email must be a non-empty string when provided",
+        },
+      };
+    }
+  }
+
+  return null;
+};
+
 export const validateUpdateUserStatusInput = ({ userId, status }) => {
   if (!userId) {
     return {
