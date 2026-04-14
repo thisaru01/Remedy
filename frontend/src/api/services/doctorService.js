@@ -25,3 +25,22 @@ export const updateOwnDoctorProfile = (profileData) => {
 export const submitOwnDoctorVerification = (verificationData) => {
   return axios.put("/doctor-profiles/me/verification", verificationData);
 };
+  
+// Public: list all approved doctors
+export const getApprovedDoctors = () => {
+  return axios.get("/doctor-profiles/approved/public");
+};
+
+// Public: list approved doctors by specialty
+export const getApprovedDoctorsBySpecialty = (specialty) => {
+  return axios.get(
+    `/doctor-profiles/approved/public/specialty/${encodeURIComponent(
+      specialty,
+    )}`,
+  );
+};
+
+// Public: get doctor details
+export const getDoctorDetails = (id) => {
+  return axios.get(`/doctor-profiles/details/${id}`);
+};

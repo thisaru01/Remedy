@@ -215,6 +215,29 @@ export const loginUser = async ({ email, password }) => {
   };
 };
 
+// Get profile for the currently authenticated user
+export const getMyProfileService = async ({ userId }) => {
+  const user = await User.findById(userId);
+
+  if (!user) {
+    return {
+      status: 404,
+      body: {
+        success: false,
+        message: "User not found",
+      },
+    };
+  }
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+      user: buildUserResponse(user),
+    },
+  };
+};
+
 // Change password for the authenticated user
 export const changeMyPasswordService = async ({
   userId,
