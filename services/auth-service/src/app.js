@@ -3,6 +3,7 @@ import cors from "cors";
 import morgan from "morgan";
 
 import authRoutes from "./routes/authRoutes.js";
+import internalAuthRoutes from "./routes/internalAuthRoutes.js";
 import { errorHandler, notFound } from "./middleware/errorMiddleware.js";
 
 const app = express();
@@ -18,6 +19,7 @@ app.get("/api/health", (req, res) => {
 
 // Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/auth/internal", internalAuthRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
