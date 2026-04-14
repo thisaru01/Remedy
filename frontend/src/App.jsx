@@ -23,6 +23,7 @@ import DoctorRouteLayout from "./doctors/DoctorRouteLayout.jsx";
 import DoctorDashboard from "@/doctors/pages/DoctorDashboard.jsx";
 import DoctorProfile from "@/doctors/pages/DoctorProfile.jsx";
 import DoctorAppointments from "@/doctors/pages/DoctorAppointments.jsx";
+import DoctorAppointmentDetail from "@/doctors/pages/DoctorAppointmentDetail.jsx";
 import DoctorPatientReports from "@/doctors/pages/DoctorPatientReports.jsx";
 import DoctorScheduleCreate from "@/doctors/pages/DoctorScheduleCreate.jsx";
 import DoctorScheduleManage from "@/doctors/pages/DoctorScheduleManage.jsx";
@@ -75,6 +76,7 @@ export default function App() {
           <Route path="profile" element={<DoctorProfile />} />
           <Route path="appointments">
             <Route path=":status" element={<DoctorAppointments />} />
+            <Route path="detail/:id" element={<DoctorAppointmentDetail />} />
           </Route>
           <Route path="patient-reports" element={<DoctorPatientReports />} />
           <Route path="schedule">

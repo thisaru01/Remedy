@@ -91,15 +91,17 @@ export const createSession = async (req, res, next) => {
 
     let isValidAppointment;
     try {
-      isValidAppointment = await controllerDeps.validateWithAppointmentService(appointmentId);
+      isValidAppointment = await controllerDeps.validateWithAppointmentService(appointmentId, {
+        userId: req.user?.id,
+        userRole: req.user?.role,
+      });
     } catch (error) {
       // Appointment service is down right now
       return sendError(res, 503, "Appointment service is unavailable. Please try again later.");
     }
 
     if (!isValidAppointment) {
-      // Appointment exists but doesn't match the required type/status
-      return sendError(res, 400, "Appointment is invalid: must be an ONLINE appointment with PAID status.");
+      return sendError(res, 400, "Appointment is invalid: payment has not been completed.");
     }
 
     // Find-or-create: return existing session if one already exists for this appointment
