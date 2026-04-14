@@ -1,4 +1,7 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import MeetingsTab from "@/patients/components/MeetingsTab";
+import PrescriptionsTab from "@/patients/components/PrescriptionsTab";
+import ReportsTab from "@/patients/components/ReportsTab";
 
 export default function AppointmentDetail() {
   return (
@@ -14,15 +17,15 @@ export default function AppointmentDetail() {
           </TabsList>
 
           <TabsContent value="meetings" className="mt-4">
-            <div className="text-sm text-muted-foreground">No meetings scheduled for this appointment.</div>
+            <MeetingsTab />
           </TabsContent>
 
           <TabsContent value="prescriptions" className="mt-4">
-            <div className="text-sm text-muted-foreground">No prescriptions available.</div>
+            <PrescriptionsTab />
           </TabsContent>
 
           <TabsContent value="reports" className="mt-4">
-            <div className="text-sm text-muted-foreground">No reports available.</div>
+            <ReportsTab />
           </TabsContent>
         </Tabs>
       </div>
