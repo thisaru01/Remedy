@@ -12,6 +12,9 @@ export const getApprovedDoctorsBySpecialty = (specialty) => {
       specialty,
     )}`,
   );
+};
+
+// Public: get doctor details
 export const getDoctorDetails = (id) => {
   return axios.get(`/doctor-profiles/details/${id}`);
 };
