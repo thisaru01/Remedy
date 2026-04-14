@@ -39,7 +39,7 @@ const SPECIALTIES = [
   "Ophthalmologist",
 ];
 
-export function ProfileEditForm({ profile, onSave, onCancel, saving }) {
+export function ProfileEditForm({ profile, onSave, onCancel, saving, error }) {
   const [formData, setFormData] = useState({
     specialty: profile?.specialty || "General Physician",
     contactNo: profile?.contactNo || "",

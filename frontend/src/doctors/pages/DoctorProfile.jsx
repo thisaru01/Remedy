@@ -7,6 +7,7 @@ import { VerificationForm } from "../components/VerificationForm";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, RefreshCcw, ChevronRight, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export default function DoctorProfile() {
   const {
@@ -51,6 +52,15 @@ export default function DoctorProfile() {
 
   const isUnverified = profile?.verification?.status === "not_submitted";
 
+  const handleVerificationSubmit = async (data) => {
+    const result = await submitVerification(data);
+    if (!result.success) {
+      toast.error(result.error || "Verification submission failed");
+    } else {
+      toast.success("Verification submitted successfully");
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
       {/* Breadcrumbs */}
@@ -78,13 +88,21 @@ export default function DoctorProfile() {
 
       {isUnverified ? (
         <div className="max-w-2xl mx-auto py-4">
-          <VerificationForm onSubmit={submitVerification} loading={isVerifying} />
+          <VerificationForm onSubmit={handleVerificationSubmit} loading={isVerifying} error={error} />
         </div>
       ) : isEditing ? (
         <ProfileEditForm
           profile={profile}
           saving={saving}
-          onSave={updateProfile}
+          error={error}
+          onSave={async (data) => {
+            const result = await updateProfile(data);
+            if (!result.success) {
+              toast.error(result.error || "Failed to update profile");
+            } else {
+              toast.success("Profile updated successfully");
+            }
+          }}
           onCancel={toggleEdit}
         />
       ) : (

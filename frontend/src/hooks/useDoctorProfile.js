@@ -35,8 +35,9 @@ export const useDoctorProfile = () => {
       setError(null);
       return { success: true };
     } catch (err) {
-      setError(err?.message || "Failed to update profile");
-      return { success: false, error: err };
+      const message = err.response?.data?.message || err?.message || "Failed to update profile";
+      setError(message);
+      return { success: false, error: message };
     } finally {
       setSaving(false);
     }
@@ -50,8 +51,9 @@ export const useDoctorProfile = () => {
       setError(null);
       return { success: true };
     } catch (err) {
-      setError(err?.message || "Failed to submit verification");
-      return { success: false, error: err };
+      const message = err.response?.data?.message || err?.message || "Failed to submit verification";
+      setError(message);
+      return { success: false, error: message };
     } finally {
       setIsVerifying(false);
     }
