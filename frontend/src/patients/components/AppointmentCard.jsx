@@ -9,6 +9,7 @@ import { getSchedulesByDoctor } from "@/api/services/scheduleService";
 import { cancelAppointment, deleteAppointment, rescheduleAppointment } from "@/api/services/appointmentService";
 import { getDoctorDetails } from "@/api/services/doctorService";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getSchedule } from "@/api/services/scheduleService";
 import PaymentButton from "@/patients/components/PaymentButton";
 import { toast } from "sonner";
@@ -143,7 +144,18 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
     };
   }, [appt?.doctorId, appt?.doctor, schedule]);
 
-  const isClickable = appt?.status === "accepted" && appt?.paymentStatus === "success";
+  const isClickable =
+    appt?.paymentStatus === "success" &&
+    (appt?.status === "accepted" || appt?.status === "completed");
+
+  const navigate = useNavigate();
+
+  const handleCardClick = (e) => {
+    if (!isClickable) return;
+    // ignore clicks on buttons or links inside the card
+    if (e.target && e.target.closest && e.target.closest("button, a")) return;
+    navigate(`/patient/appointments/detail/${appt._id}`);
+  };
 
   const handleCancel = async () => {
     if (!appt?._id) return;
@@ -179,7 +191,10 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
 
   return (
     <>
-    <Card className={isClickable ? "transition-transform duration-150 ease-in-out hover:-translate-y-1 hover:shadow-lg cursor-pointer" : ""}>
+    <Card
+      className={isClickable ? "transition-transform duration-150 ease-in-out hover:-translate-y-1 hover:shadow-lg cursor-pointer" : ""}
+      onClick={handleCardClick}
+    >
       <CardHeader>
         <div className="flex items-center justify-between gap-4">
           <div>
