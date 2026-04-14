@@ -17,9 +17,6 @@ export default function DoctorAppointments() {
     <div className="space-y-4">
       <div className="space-y-2">
         <h1 className="text-2xl font-semibold tracking-tight">{label} Appointments</h1>
-        <p className="text-sm text-muted-foreground">
-          Your {label.toLowerCase()} appointments with patients will appear here.
-        </p>
       </div>
 
       {status === "paid" && <PaidAppointments />}

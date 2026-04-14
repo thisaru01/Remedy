@@ -174,13 +174,8 @@ export const validateWithAppointmentService = async (appointmentId) => {
   try {
     const appointment = await fetchAppointmentById(appointmentId);
 
-    if (appointment.type !== "ONLINE") {
-      console.error(`Appointment ${appointmentId} is physical, not online.`);
-      return false;
-    }
-
-    if (appointment.status !== "PAID") {
-      console.error(`Appointment ${appointmentId} is not paid yet.`);
+    if (appointment.paymentStatus !== "success") {
+      console.error(`Appointment ${appointmentId} has not been paid yet.`);
       return false;
     }
 
