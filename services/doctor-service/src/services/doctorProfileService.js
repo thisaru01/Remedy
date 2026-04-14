@@ -328,9 +328,13 @@ export const getDoctorProfilesByVerificationStatus = async ({
     "verification.status": verificationStatus,
   }).sort({ updatedAt: -1 });
 
+  const profilesWithUsers = await Promise.all(
+    profiles.map((profile) => attachUserToProfile(profile)),
+  );
+
   return {
     verificationStatus,
-    profiles,
+    profiles: profilesWithUsers,
   };
 };
 

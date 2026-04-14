@@ -1,33 +1,33 @@
 import { useState } from "react";
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle, 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
   DialogFooter
 } from "@/components/ui/dialog";
-import { 
-  Eye, 
-  CheckCircle, 
-  XCircle, 
+import {
+  Eye,
+  CheckCircle,
+  XCircle,
   ShieldAlert,
   FileText,
   ExternalLink,
@@ -39,13 +39,13 @@ import {
 import { useAdminDoctors } from "@/hooks/useAdminDoctors";
 
 export function DoctorManagement() {
-  const { 
-    pendingDoctors, 
-    approvedDoctors, 
+  const {
+    pendingDoctors,
+    approvedDoctors,
     rejectedDoctors,
-    loading, 
-    approveDoctor, 
-    rejectDoctor 
+    loading,
+    approveDoctor,
+    rejectDoctor
   } = useAdminDoctors();
 
   const [selectedDoctor, setSelectedDoctor] = useState(null);
@@ -126,9 +126,9 @@ export function DoctorManagement() {
                 )}
               </TableCell>
               <TableCell className="text-right pr-6">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
+                <Button
+                  variant="ghost"
+                  size="sm"
                   className="hover:bg-primary/10 hover:text-primary font-bold gap-2"
                   onClick={() => handleReview(doc)}
                 >
@@ -266,20 +266,20 @@ export function DoctorManagement() {
             <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider bg-secondary/50 px-3 py-1.5 rounded-full border">
               Status: <span className={
                 selectedDoctor?.verification?.status === "approved" ? "text-emerald-600 font-bold ml-1" :
-                selectedDoctor?.verification?.status === "rejected" ? "text-rose-600 font-bold ml-1" :
-                "text-amber-600 font-bold ml-1"
+                  selectedDoctor?.verification?.status === "rejected" ? "text-rose-600 font-bold ml-1" :
+                    "text-amber-600 font-bold ml-1"
               }>{selectedDoctor?.verification?.status?.toUpperCase()}</span>
             </div>
             {selectedDoctor?.verification?.status === "submitted" && (
               <div className="flex w-full sm:w-auto items-center gap-3">
-                <Button 
-                  variant="destructive" 
+                <Button
+                  variant="destructive"
                   className="w-full sm:w-auto gap-2"
                   onClick={() => handleAction("reject", selectedDoctor?.userId)}
                 >
                   <XCircle className="w-4 h-4" /> Reject
                 </Button>
-                <Button 
+                <Button
                   variant="default"
                   className="w-full sm:w-auto gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
                   onClick={() => handleAction("approve", selectedDoctor?.userId)}
