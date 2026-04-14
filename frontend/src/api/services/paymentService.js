@@ -1,7 +1,7 @@
 import axios from "@/api/axios";
 
-export const createPayment = (data) => {
-  return axios.post("/payments", data);
+export const createPayment = ({ appointmentId, currency }) => {
+  return axios.post("/payments", { appointmentId, currency });
 };
 
 export const verifyPayment = (sessionId) => {
