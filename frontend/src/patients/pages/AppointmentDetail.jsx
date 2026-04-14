@@ -1,9 +1,12 @@
+import { useParams } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import MeetingsTab from "@/patients/components/MeetingsTab";
 import PrescriptionsTab from "@/patients/components/PrescriptionsTab";
 import ReportsTab from "@/patients/components/ReportsTab";
 
 export default function AppointmentDetail() {
+  const { id: appointmentId } = useParams();
+
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold">Appointment Details</h2>
@@ -17,7 +20,7 @@ export default function AppointmentDetail() {
           </TabsList>
 
           <TabsContent value="meetings" className="mt-4">
-            <MeetingsTab />
+            <MeetingsTab appointmentId={appointmentId} />
           </TabsContent>
 
           <TabsContent value="prescriptions" className="mt-4">

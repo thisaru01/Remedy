@@ -1,7 +1,7 @@
 import {
   mintJaasRoomToken,
 } from "../config/jaas.js";
-import { createSessionRecord } from "../repositories/sessionRepository.js";
+import { createSessionRecord, findSessionByAppointmentId } from "../repositories/sessionRepository.js";
 import {
   getAccessibleSessionByAppointmentIdOrError,
   getAccessibleSessionByIdOrError,
@@ -23,6 +23,7 @@ import {
 const defaultDeps = {
   mintJaasRoomToken,
   createSessionRecord,
+  findSessionByAppointmentId,
   getAccessibleSessionByAppointmentIdOrError,
   getAccessibleSessionByIdOrError,
   getPaginatedSessions,
@@ -99,6 +100,12 @@ export const createSession = async (req, res, next) => {
     if (!isValidAppointment) {
       // Appointment exists but doesn't match the required type/status
       return sendError(res, 400, "Appointment is invalid: must be an ONLINE appointment with PAID status.");
+    }
+
+    // Find-or-create: return existing session if one already exists for this appointment
+    const existingSession = await controllerDeps.findSessionByAppointmentId(appointmentId);
+    if (existingSession) {
+      return sendData(res, 200, existingSession, { message: "Session already exists" });
     }
 
     const { roomName, joinUrl } = controllerDeps.generateSecureRoomUrl();
