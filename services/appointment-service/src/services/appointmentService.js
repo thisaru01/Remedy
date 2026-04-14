@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
 import axios from "axios";
 import Appointment from "../models/appointmentModel.js";
+import { fetchUserByIdInternal } from "../clients/authClient.js";
+import { sendAppointmentConfirmationEmail } from "../clients/notificationClient.js";
 
 const DOCTOR_SERVICE_BASE_URL =
   process.env.DOCTOR_SERVICE_URL || "http://doctor-service:5000";
@@ -103,15 +105,60 @@ const generateAppointmentNumber = async (scheduleId) => {
   return `APPT_${numberPart}_${datePart}`;
 };
 
+const formatScheduleTime = (schedule) => {
+  if (!schedule) return undefined;
+  const { day, startTime, endTime } = schedule;
+  if (!day || !startTime) return undefined;
+  if (endTime) {
+    return `${day} ${startTime} - ${endTime}`;
+  }
+  return `${day} ${startTime}`;
+};
+
+const sendAppointmentNotificationsSafe = async ({ appointment, schedule }) => {
+  try {
+    if (!appointment) return;
+
+    const [patientUser, doctorUser] = await Promise.all([
+      fetchUserByIdInternal(String(appointment.patientId)),
+      fetchUserByIdInternal(String(appointment.doctorId)),
+    ]);
+
+    const appointmentDateTime = formatScheduleTime(schedule);
+    const appointmentNumber = appointment.appointmentNumber;
+
+    if (patientUser?.email) {
+      await sendAppointmentConfirmationEmail({
+        to: patientUser.email,
+        patientName: patientUser.name,
+        doctorName: doctorUser?.name,
+        appointmentDateTime,
+        recipientType: "patient",
+        appointmentNumber,
+      });
+    }
+
+    if (doctorUser?.email) {
+      await sendAppointmentConfirmationEmail({
+        to: doctorUser.email,
+        patientName: patientUser?.name,
+        doctorName: doctorUser.name,
+        appointmentDateTime,
+        recipientType: "doctor",
+        appointmentNumber,
+      });
+    }
+  } catch (error) {
+    console.error("Failed to send appointment notifications", {
+      appointmentId: appointment?._id,
+      error: error?.message,
+    });
+  }
+};
+
 export const createAppointment = async (data) => {
-  const {
-    patientId,
-    doctorId,
-    scheduleId,
-    status,
-    paymentStatus,
-    reportIds,
-  } = data;
+  const { patientId, doctorId, scheduleId, status, paymentStatus, reportIds } =
+    data;
 
   // Basic required validations
   if (!patientId) {
@@ -148,6 +195,10 @@ export const createAppointment = async (data) => {
     scheduleId,
     (schedule.slotCount ?? 0) - 1,
   );
+
+  // Fire-and-forget notifications; do not block appointment creation on email failures
+  // or notification latency (e.g., Gmail) from impacting API response time.
+  void sendAppointmentNotificationsSafe({ appointment, schedule });
 
   return appointment;
 };
@@ -429,7 +480,9 @@ export const updatePaymentStatus = async (id, requester, paymentStatus) => {
     const isPatientOwner =
       appointment.patientId && appointment.patientId.toString() === userId;
     if (!isPatientOwner) {
-      const err = new Error("You can only update payment for your own appointments");
+      const err = new Error(
+        "You can only update payment for your own appointments",
+      );
       err.statusCode = 403;
       throw err;
     }
@@ -437,14 +490,21 @@ export const updatePaymentStatus = async (id, requester, paymentStatus) => {
 
   const allowed = ["pending", "success", "failed"];
   if (!allowed.includes(paymentStatus)) {
-    const err = new Error(`paymentStatus must be one of: ${allowed.join(", ")}`);
+    const err = new Error(
+      `paymentStatus must be one of: ${allowed.join(", ")}`,
+    );
     err.statusCode = 400;
     throw err;
   }
 
   // Business rule: payment can be marked success or failed only when appointment is accepted
-  if (["success", "failed"].includes(paymentStatus) && appointment.status !== "accepted") {
-    const err = new Error("Payment can be 'success' or 'failed' only for accepted appointments");
+  if (
+    ["success", "failed"].includes(paymentStatus) &&
+    appointment.status !== "accepted"
+  ) {
+    const err = new Error(
+      "Payment can be 'success' or 'failed' only for accepted appointments",
+    );
     err.statusCode = 400;
     throw err;
   }
@@ -471,7 +531,9 @@ export const completeAppointment = async (id, requester) => {
 
   // ensure payment was successful before allowing completion
   if (appointment.paymentStatus !== "success") {
-    const err = new Error("Appointment payment must be successful before completing");
+    const err = new Error(
+      "Appointment payment must be successful before completing",
+    );
     err.statusCode = 400;
     throw err;
   }
@@ -513,7 +575,8 @@ export const deleteAppointment = async (id, requester) => {
   }
 
   const userId = requester.id;
-  const isPatientOwner = appointment.patientId && appointment.patientId.toString() === userId;
+  const isPatientOwner =
+    appointment.patientId && appointment.patientId.toString() === userId;
   if (!isPatientOwner) {
     const err = new Error("You can only delete your own appointments");
     err.statusCode = 403;
@@ -522,7 +585,9 @@ export const deleteAppointment = async (id, requester) => {
 
   const allowed = ["pending", "rejected", "cancelled"];
   if (!allowed.includes(appointment.status)) {
-    const err = new Error("Only appointments in pending, rejected, or cancelled status can be deleted");
+    const err = new Error(
+      "Only appointments in pending, rejected, or cancelled status can be deleted",
+    );
     err.statusCode = 400;
     throw err;
   }
