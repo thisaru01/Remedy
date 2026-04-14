@@ -1,4 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { Toaster } from "@/components/ui/sonner";
 
 // Admin
 import AdminRouteLayout from "./admin/AdminRouteLayout.jsx";
@@ -35,6 +36,7 @@ import RemdedyAiPage from "@/public/remedy-ai/RemdedyAiPage.jsx";
 export default function App() {
   return (
     <BrowserRouter>
+      <Toaster richColors closeButton />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/auth" element={<AuthPage />} />

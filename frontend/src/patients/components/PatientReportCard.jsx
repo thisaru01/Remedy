@@ -53,9 +53,13 @@ export default function PatientReportCard({
   report,
   onEdit,
   onDelete,
+  onShare,
   isDeleting,
 }) {
   const isLinkedToAppointment = Boolean(report?.appointmentId);
+  const sharedCount = Array.isArray(report?.sharedWith)
+    ? report.sharedWith.length
+    : 0;
 
   return (
     <Card className="flex h-full flex-col justify-between border border-border/70 bg-card">
@@ -110,6 +114,12 @@ export default function PatientReportCard({
             Linked to appointment
           </div>
         )}
+
+        {sharedCount > 0 && (
+          <div className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[0.68rem] font-medium text-emerald-700">
+            Shared with {sharedCount} doctor{sharedCount > 1 ? "s" : ""}
+          </div>
+        )}
       </CardContent>
 
       <CardFooter className="mt-auto flex items-center justify-between gap-2 border-t bg-muted/40 py-2">
@@ -123,10 +133,19 @@ export default function PatientReportCard({
             >
               <a href={report.cloudinaryUrl} target="_blank" rel="noreferrer">
                 <ExternalLink className="h-3.5 w-3.5" />
-                Open in new tab
+                Open
               </a>
             </Button>
           )}
+          <Button
+            variant="outline"
+            size="xs"
+            type="button"
+            className="h-7 px-2 text-[0.75rem]"
+            onClick={() => onShare?.(report)}
+          >
+            Share
+          </Button>
         </div>
 
         <div className="flex items-center gap-1.5">

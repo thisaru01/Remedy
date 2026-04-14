@@ -20,3 +20,14 @@ export const updatePatientReport = (id, payload) => {
 export const deletePatientReport = (id) => {
   return axios.delete(`/patient-reports/${id}`);
 };
+
+// Grant or update a doctor's access to a specific report
+// body: { doctorId: string, expiresAt?: string }
+export const grantDoctorAccessToPatientReport = (id, body) => {
+  return axios.post(`/patient-reports/${id}/grant-access`, body);
+};
+
+// Revoke a doctor's access to a specific report
+export const revokeDoctorAccessToPatientReport = (id, doctorId) => {
+  return axios.delete(`/patient-reports/${id}/grant-access/${doctorId}`);
+};
