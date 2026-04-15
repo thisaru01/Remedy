@@ -32,7 +32,7 @@ import DoctorScheduleManage from "@/doctors/pages/DoctorScheduleManage.jsx";
 import Home from "@/public/Home.jsx";
 import AuthPage from "@/public/AuthPage.jsx";
 import BookAppointmentsPage from "@/public/book-appointments/BookAppointmentsPage.jsx";
-import RemdedyAiPage from "@/public/remedy-ai/RemdedyAiPage.jsx";
+import RemdedyAiPage from "@/public/remedy-ai/RemedyAiPage.jsx";
 
 export default function App() {
   return (

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { AlertTriangle, Brain } from "lucide-react";
 
 import Navbar from "@/public/components/Navbar.jsx";
+import Footer from "@/components/Footer.jsx";
 import {
   Card,
   CardDescription,
@@ -210,11 +211,7 @@ export default function RemdedyAiPage() {
         </div>
       </main>
 
-      <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto max-w-6xl px-4 py-6 text-sm text-slate-600">
-          © {new Date().getFullYear()} Remedy
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

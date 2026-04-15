@@ -1,6 +1,7 @@
 import Navbar from "@/public/components/Navbar.jsx";
 import Hero from "@/public/home/sections/Hero.jsx";
 import Contact from "@/public/home/sections/Contact.jsx";
+import Footer from "@/components/Footer.jsx";
 
 export default function Home() {
   return (
@@ -12,11 +13,7 @@ export default function Home() {
         <Contact />
       </main>
 
-      <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto max-w-6xl px-4 py-6 text-sm text-slate-600">
-          © {new Date().getFullYear()} Remedy
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
