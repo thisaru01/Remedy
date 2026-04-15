@@ -1,9 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Clock3 } from "lucide-react";
+import { CheckCircle2, Clock3, XCircle } from "lucide-react";
+import { toast } from "sonner";
 
-import { getAppointments } from "@/api/services/appointmentService";
+import {
+  acceptAppointment,
+  getAppointments,
+  rejectAppointment,
+} from "@/api/services/appointmentService";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 function formatDate(dt) {
   try {
@@ -13,7 +19,7 @@ function formatDate(dt) {
   }
 }
 
-function AppointmentCard({ appointment }) {
+function AppointmentCard({ appointment, onAccept, onReject }) {
   return (
     <Card>
       <CardHeader>
@@ -54,6 +60,34 @@ function AppointmentCard({ appointment }) {
           </div>
         </div>
       </CardContent>
+
+      <div className="flex flex-wrap gap-2 border-t px-6 py-4">
+        <Button
+          type="button"
+          variant="default"
+          className="gap-2"
+          onClick={() => onAccept(appointment)}
+        >
+          <CheckCircle2 className="h-4 w-4" />
+          Approve
+        </Button>
+
+        <Button
+          type="button"
+          variant="destructive"
+          className="gap-2"
+          onClick={() => onReject(appointment)}
+        >
+          <XCircle className="h-4 w-4" />
+          Reject
+        </Button>
+
+        <Button asChild type="button" variant="outline" className="ml-auto">
+          <Link to={`/doctor/appointments/detail/${appointment._id}`}>
+            View Details
+          </Link>
+        </Button>
+      </div>
     </Card>
   );
 }
@@ -63,17 +97,40 @@ export default function PendingAppointments() {
   const [appointments, setAppointments] = useState([]);
   const [error, setError] = useState(null);
 
+  const refreshAppointments = async () => {
+    const res = await getAppointments({ status: "pending" });
+    const data = res?.data?.appointments ?? [];
+    return Array.isArray(data) ? data : [];
+  };
+
+  const handleAccept = async (appointment) => {
+    try {
+      await acceptAppointment(appointment._id);
+      setAppointments((prev) => prev.filter((item) => item._id !== appointment._id));
+      toast.success("Appointment approved successfully");
+    } catch (err) {
+      toast.error(err?.message || "Failed to approve appointment");
+    }
+  };
+
+  const handleReject = async (appointment) => {
+    try {
+      await rejectAppointment(appointment._id);
+      setAppointments((prev) => prev.filter((item) => item._id !== appointment._id));
+      toast.success("Appointment rejected successfully");
+    } catch (err) {
+      toast.error(err?.message || "Failed to reject appointment");
+    }
+  };
+
   useEffect(() => {
     let mounted = true;
 
     const load = async () => {
       try {
         setLoading(true);
-        const res = await getAppointments({ status: "pending" });
-        const data = res?.data?.appointments ?? [];
-        if (mounted) {
-          setAppointments(Array.isArray(data) ? data : []);
-        }
+        const data = await refreshAppointments();
+        if (mounted) setAppointments(data);
       } catch (err) {
         if (mounted) {
           setError(err?.message || String(err));
@@ -114,13 +171,12 @@ export default function PendingAppointments() {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {appointments.map((appointment) => (
-        <Link
+        <AppointmentCard
           key={appointment._id}
-          to={`/doctor/appointments/detail/${appointment._id}`}
-          className="block no-underline hover:opacity-95"
-        >
-          <AppointmentCard appointment={appointment} />
-        </Link>
+          appointment={appointment}
+          onAccept={handleAccept}
+          onReject={handleReject}
+        />
       ))}
     </div>
   );

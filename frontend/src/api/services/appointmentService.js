@@ -12,6 +12,14 @@ export const cancelAppointment = (id) => {
   return axios.patch(`/appointments/${id}/cancel`);
 };
 
+export const acceptAppointment = (id) => {
+  return axios.patch(`/appointments/${id}/accept`);
+};
+
+export const rejectAppointment = (id) => {
+  return axios.patch(`/appointments/${id}/reject`);
+};
+
 export const deleteAppointment = (id) => {
   return axios.delete(`/appointments/${id}`);
 };
