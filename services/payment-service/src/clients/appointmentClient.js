@@ -41,15 +41,20 @@ export const fetchAppointmentByIdForUser = async (appointmentId, requester) => {
     headers["x-user-name"] = String(requester.name);
   }
 
-  const response = await axios.get(
-    `${appointmentServiceUrl}/api/appointments/${appointmentId}`,
-    {
-      headers,
-      timeout: timeoutMs,
-    },
-  );
+  try {
+    const response = await axios.get(
+      `${appointmentServiceUrl}/api/appointments/${appointmentId}`,
+      {
+        headers,
+        timeout: timeoutMs,
+      },
+    );
 
-  return response.data?.appointment || response.data?.data || null;
+    return response.data?.appointment || response.data?.data || null;
+  } catch (error) {
+    console.error("Appointment service error:", error.message);
+    throw error;
+  }
 };
 
 export const updateAppointmentPaymentStatus = async (
@@ -59,17 +64,38 @@ export const updateAppointmentPaymentStatus = async (
   const appointmentServiceUrl = getAppointmentServiceUrl();
   const timeoutMs = getAppointmentServiceTimeoutMs();
 
-  const response = await axios.patch(
-    `${appointmentServiceUrl}/api/appointments/${appointmentId}/payment-status`,
-    { paymentStatus },
-    {
-      headers: {
-        "x-internal-token": process.env.INTERNAL_SERVICE_TOKEN,
-        "x-user-role": "admin",
+  try {
+    const response = await axios.patch(
+      `${appointmentServiceUrl}/api/appointments/${appointmentId}/payment-status`,
+      { paymentStatus },
+      {
+        headers: {
+          "x-internal-token": process.env.INTERNAL_SERVICE_TOKEN,
+          "x-user-role": "admin",
+        },
+        timeout: timeoutMs,
       },
-      timeout: timeoutMs,
-    },
-  );
+    );
 
-  return response.data?.appointment || response.data?.data || null;
+    return response.data?.appointment || response.data?.data || null;
+  } catch (error) {
+    console.error("Appointment service error:", error.message);
+    throw error;
+  }
+};
+
+const EVENT_STATUS_MAP = {
+  PAYMENT_PENDING: "pending",
+  PAYMENT_SUCCESS: "success",
+  PAYMENT_FAILED: "failed",
+};
+
+export const emitAppointmentEvent = async (event, appointmentId) => {
+  const paymentStatus = EVENT_STATUS_MAP[event];
+  if (!paymentStatus) {
+    console.error(`Unknown payment event: ${event}`);
+    return;
+  }
+
+  await updateAppointmentPaymentStatus(appointmentId, paymentStatus);
 };

@@ -5,7 +5,6 @@ import {
   FileText,
   LayoutDashboard,
   LogOut,
-  Pill,
   Stethoscope,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -55,11 +54,6 @@ const defaultItems = [
       { title: "General", href: "/patient/reports/general" },
       { title: "Appointment", href: "/patient/reports/appointment" },
     ],
-  },
-  {
-    title: "Prescriptions",
-    href: "/patient/prescriptions",
-    icon: Pill,
   },
 ];
 
