@@ -16,6 +16,10 @@ export const acceptAppointment = (id) => {
   return axios.patch(`/appointments/${id}/accept`);
 };
 
+export const completeAppointment = (id) => {
+  return axios.patch(`/appointments/${id}/complete`);
+};
+
 export const rejectAppointment = (id) => {
   return axios.patch(`/appointments/${id}/reject`);
 };
