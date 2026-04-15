@@ -25,6 +25,7 @@ import Navbar from "@/public/components/Navbar.jsx";
 import DoctorCard from "./components/DoctorCard.jsx";
 import DoctorCardSkeleton from "./components/DoctorCardSkeleton.jsx";
 import { useFindDoctors } from "./hooks/useFindDoctors.js";
+import Footer from "@/components/Footer.jsx";
 
 // Constants
 const SPECIALTY_OPTIONS = [
@@ -248,11 +249,7 @@ export default function BookAppointmentsPage() {
         )}
       </main>
 
-      <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto max-w-6xl px-4 py-6 text-sm text-slate-600">
-          © {new Date().getFullYear()} Remedy
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

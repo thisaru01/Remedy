@@ -26,6 +26,7 @@ import {
   updatePatientReport,
   uploadPatientReport,
 } from "@/api/services/patientReportService";
+import { getAppointment } from "@/api/services/appointmentService";
 
 function normalizeReportsResponse(response) {
   const data = response?.data;
@@ -43,6 +44,7 @@ export default function ReportsTab() {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [appointment, setAppointment] = useState(null);
 
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -83,6 +85,26 @@ export default function ReportsTab() {
     };
 
     load();
+    return () => {
+      mounted = false;
+    };
+  }, [appointmentId]);
+
+  useEffect(() => {
+    if (!appointmentId) return;
+    let mounted = true;
+
+    const loadAppointment = async () => {
+      try {
+        const res = await getAppointment(appointmentId);
+        const appt = res?.data?.appointment ?? res?.data ?? null;
+        if (mounted) setAppointment(appt);
+      } catch (err) {
+        if (mounted) setAppointment(null);
+      }
+    };
+
+    loadAppointment();
     return () => {
       mounted = false;
     };
@@ -255,29 +277,31 @@ export default function ReportsTab() {
       />
 
       <div className="space-y-4">
-        <div>
-          <CardContent className="flex flex-col items-center justify-center gap-4 py-8 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-              <FilePlus className="h-6 w-6 text-primary" />
-            </div>
-            <div className="space-y-1">
-              <p className="font-semibold text-foreground">Add Reports</p>
-              <p className="text-sm text-muted-foreground">
-                Upload reports related to this appointment for your doctor to
-                review.
-              </p>
-            </div>
-            <Button
-              disabled={loading || uploading}
-              className="gap-2"
-              type="button"
-              onClick={() => setUploadOpen(true)}
-            >
-              <FilePlus className="h-4 w-4" />
-              {uploading ? "Uploading..." : "Add report"}
-            </Button>
-          </CardContent>
-        </div>
+        {appointment?.status !== "completed" && (
+          <div>
+            <CardContent className="flex flex-col items-center justify-center gap-4 py-8 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                <FilePlus className="h-6 w-6 text-primary" />
+              </div>
+              <div className="space-y-1">
+                <p className="font-semibold text-foreground">Add Reports</p>
+                <p className="text-sm text-muted-foreground">
+                  Upload reports related to this appointment for your doctor to
+                  review.
+                </p>
+              </div>
+              <Button
+                disabled={loading || uploading}
+                className="gap-2"
+                type="button"
+                onClick={() => setUploadOpen(true)}
+              >
+                <FilePlus className="h-4 w-4" />
+                {uploading ? "Uploading..." : "Add report"}
+              </Button>
+            </CardContent>
+          </div>
+        )}
 
         <Separator />
 
@@ -315,6 +339,7 @@ export default function ReportsTab() {
                     onEdit={openEdit}
                     onDelete={setPendingDelete}
                     isDeleting={String(deletingId) === String(report._id)}
+                    allowEditDelete={appointment?.status !== "completed"}
                   />
                 ))}
               </div>
