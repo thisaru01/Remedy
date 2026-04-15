@@ -59,6 +59,12 @@ export default function MeetingsTab({ appointmentId }) {
         <span className="text-xs text-muted-foreground">Status:</span>
         <span className="text-sm capitalize font-medium">{session.status}</span>
       </div>
+      {session.patientName && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">Patient:</span>
+          <span className="text-sm font-medium">{session.patientName}</span>
+        </div>
+      )}
       <div>
         <Button
           size="sm"
