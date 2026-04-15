@@ -23,11 +23,12 @@ export const useDoctorPrescription = (appointmentId) => {
       if (err.response?.status === 404) {
         // Not found is fine, it means no prescription exists yet (form mode)
         setPrescription(null);
-      } else {
-        const msg = err.response?.data?.message || "Failed to fetch prescription details.";
-        setError(msg);
-        toast.error(msg);
+        return;
       }
+
+      const msg = err.response?.data?.message || "Failed to fetch prescription details.";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

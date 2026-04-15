@@ -137,14 +137,6 @@ export default function PrescriptionsTab({ appointmentId, appointment }) {
         </Alert>
       )}
 
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
       <Card>
         <CardHeader className="pb-4 border-b bg-muted/20">
           <CardTitle className="text-lg flex items-center gap-2">

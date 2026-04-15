@@ -27,3 +27,12 @@ export const getDoctorPrescriptionByAppointmentId = (appointmentId) => {
 export const getMyDoctorPrescriptions = (params = {}) => {
   return axios.get("/doctor-prescriptions/me", { params });
 };
+
+/**
+ * Lists all prescriptions belonging to the currently logged-in patient.
+ * @param {Object} params - Query parameters (e.g., { status: 'finalized' })
+ * @returns {Promise}
+ */
+export const getMyPatientPrescriptions = (params = {}) => {
+  return axios.get("/doctor-prescriptions/patient/me", { params });
+};
