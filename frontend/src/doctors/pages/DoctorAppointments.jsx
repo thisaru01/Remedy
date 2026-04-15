@@ -3,6 +3,7 @@ import PaidAppointments from "@/doctors/components/PaidAppointments.jsx";
 import PendingAppointments from "@/doctors/components/PendingAppointments.jsx";
 import ApprovedAppointments from "@/doctors/components/ApprovedAppointments.jsx";
 import CompletedAppointments from "@/doctors/components/CompletedAppointments.jsx";
+import RejectedAppointments from "@/doctors/components/RejectedAppointments.jsx";
 
 const LABELS = {
   pending: "Pending",
@@ -26,6 +27,7 @@ export default function DoctorAppointments() {
       {status === "approved" && <ApprovedAppointments />}
       {status === "paid" && <PaidAppointments />}
       {status === "completed" && <CompletedAppointments />}
+      {status === "rejected" && <RejectedAppointments />}
     </div>
   );
 }
