@@ -2,16 +2,19 @@ import React, { useEffect, useState, useMemo } from "react";
 import { 
   Calendar, 
   Clock, 
-  CheckCircle2, 
-  XCircle, 
   Loader2,
   Edit2,
   Settings2,
-  AlertCircle
+  AlertCircle,
+  CalendarDays
 } from "lucide-react";
 import { useDoctorSchedule } from "@/hooks/useDoctorSchedule";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 const DAYS = [
   "Monday",
@@ -30,6 +33,28 @@ const TIME_SLOTS = [
   "05:00 PM", "05:30 PM", "06:00 PM", "06:30 PM", "07:00 PM", "07:30 PM",
   "08:00 PM"
 ];
+
+const calculateEndTime = (startTime) => {
+  if (!startTime) return "";
+  const match = startTime.match(/(\d{2}):(\d{2})\s(AM|PM)/);
+  if (!match) return startTime;
+  
+  let hours = parseInt(match[1]);
+  const minutes = match[2];
+  let ampm = match[3];
+
+  if (hours === 12) hours = 0;
+  if (ampm === "PM") hours += 12;
+
+  hours += 2; // Fixed 2-hour duration
+
+  let endAmpm = hours >= 12 && hours < 24 ? "PM" : "AM";
+  let endHours = hours % 12;
+  if (endHours === 0) endHours = 12;
+
+  const paddedHours = endHours.toString().padStart(2, "0");
+  return `${paddedHours}:${minutes} ${endAmpm}`;
+};
 
 const DoctorScheduleManage = () => {
   const { 
@@ -76,75 +101,79 @@ const DoctorScheduleManage = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
+    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-300 pb-12">
       {/* Header Area */}
-      <div className="flex items-center justify-between border-b pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-6">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">Active Schedule Management</h1>
-          <p className="text-sm text-muted-foreground">Monitor and update your consultation windows.</p>
+          <h1 className="text-3xl font-bold tracking-tight">Schedule Management</h1>
+          <p className="text-sm text-muted-foreground">Monitor and update your active consultation windows.</p>
         </div>
-        <div className="flex items-center gap-2 px-4 py-2 bg-primary/5 border rounded-xl">
+        <Badge variant="outline" className="flex items-center gap-2 px-3 py-1.5 w-fit">
             <Settings2 className="h-4 w-4 text-primary" />
-            <span className="text-xs font-bold uppercase tracking-widest text-primary">Live Inventory</span>
-        </div>
+            <span className="font-medium">Live Inventory</span>
+        </Badge>
       </div>
 
-      <div className="grid grid-cols-1 gap-6">
+      <div className="space-y-8">
         {loading && schedules.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed rounded-[2rem] gap-4">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm font-medium text-muted-foreground">Authenticating Schedule Inventory...</p>
+          <div className="flex flex-col items-center justify-center py-20 border border-dashed rounded-lg gap-4 bg-muted/10">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <p className="text-sm font-medium text-muted-foreground">Loading Schedule Inventory...</p>
           </div>
         ) : (
           DAYS.map((day) => (
-            <div key={day} className="bg-card border rounded-[2rem] overflow-hidden shadow-sm transition-all hover:shadow-md">
-              <div className="px-8 py-4 bg-muted/20 border-b flex items-center justify-between">
+            <Card key={day} className="overflow-hidden shadow-sm">
+              <div className="px-6 py-4 bg-muted/30 border-b flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="h-6 w-1 bg-primary rounded-full" />
-                  <h3 className="text-lg font-bold">{day}</h3>
+                  <CalendarDays className="h-5 w-5 text-muted-foreground" />
+                  <h3 className="text-lg font-semibold">{day}</h3>
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-widest bg-background border px-3 py-1 rounded-full">
-                  {groupedSchedules[day].length} Managed Slots
-                </span>
+                <Badge variant="secondary" className="font-mono">
+                  {groupedSchedules[day].length} Slots
+                </Badge>
               </div>
 
-              <div className="p-6">
+              <CardContent className="p-6">
                 {groupedSchedules[day].length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {groupedSchedules[day].map((slot) => (
+                    {groupedSchedules[day].map((slot) => {
+                      const isEditing = editingSlot === slot._id;
+                      const endTime = calculateEndTime(slot.startTime);
+
+                      return (
                       <div 
                         key={slot._id}
                         className={cn(
-                          "relative group rounded-3xl border p-5 transition-all duration-300",
-                          editingSlot === slot._id ? "border-primary bg-primary/5 ring-4 ring-primary/5" : "bg-background hover:border-primary/30"
+                          "relative rounded-lg border p-4 transition-all duration-200",
+                          isEditing ? "border-primary bg-primary/5 shadow-sm" : "bg-card hover:shadow-sm"
                         )}
                       >
-                        {editingSlot === slot._id ? (
+                        {isEditing ? (
                           /* Edit Form */
-                          <form onSubmit={handleUpdate} className="space-y-4 animate-in zoom-in-95 duration-200">
-                              <div className="space-y-1">
-                                  <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">Update Day</label>
+                          <form onSubmit={handleUpdate} className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
+                              <div className="space-y-1.5">
+                                  <label className="text-xs font-medium text-muted-foreground">Update Day</label>
                                   <select 
                                     value={editFormData.day}
                                     onChange={(e) => setEditFormData({...editFormData, day: e.target.value})}
-                                    className="w-full text-xs font-bold bg-background border rounded-xl p-2 outline-none focus:ring-1 focus:ring-primary"
+                                    className="w-full text-sm font-medium bg-background border rounded-md p-2 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                                   >
                                       {DAYS.map(d => <option key={d} value={d}>{d}</option>)}
                                   </select>
                               </div>
-                              <div className="space-y-1">
-                                  <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">Update Time</label>
+                              <div className="space-y-1.5">
+                                  <label className="text-xs font-medium text-muted-foreground">Update Start Time</label>
                                   <select 
                                     value={editFormData.startTime}
                                     onChange={(e) => setEditFormData({...editFormData, startTime: e.target.value})}
-                                    className="w-full text-xs font-bold bg-background border rounded-xl p-2 outline-none focus:ring-1 focus:ring-primary"
+                                    className="w-full text-sm font-medium bg-background border rounded-md p-2 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                                   >
                                       {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
                                   </select>
                               </div>
-                              <div className="flex gap-2">
-                                  <button type="submit" className="flex-1 bg-primary text-primary-foreground text-[10px] font-black uppercase py-2 rounded-lg hover:opacity-90">Save</button>
-                                  <button type="button" onClick={() => setEditingSlot(null)} className="flex-1 bg-muted text-[10px] font-black uppercase py-2 rounded-lg hover:bg-muted/80">Cancel</button>
+                              <div className="flex gap-2 pt-2">
+                                  <Button type="submit" size="sm" className="flex-1">Save</Button>
+                                  <Button variant="outline" size="sm" type="button" onClick={() => setEditingSlot(null)} className="flex-1">Cancel</Button>
                               </div>
                           </form>
                         ) : (
@@ -152,62 +181,69 @@ const DoctorScheduleManage = () => {
                           <div className="space-y-4">
                             <div className="flex items-start justify-between">
                               <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-2xl bg-muted/50 flex items-center justify-center text-primary border">
+                                <div className="h-10 w-10 rounded-md bg-primary/5 flex items-center justify-center text-primary border border-primary/10">
                                   <Clock className="h-4 w-4" />
                                 </div>
                                 <div>
-                                  <div className="text-lg font-black tracking-tight">{slot.startTime}</div>
-                                  <div className="text-[9px] font-bold text-muted-foreground uppercase">{slot.slotCount} Possible patients</div>
+                                  <div className="text-base font-semibold">{slot.startTime} - {endTime}</div>
+                                  <div className="text-sm text-muted-foreground">{slot.slotCount} Capacity</div>
                                 </div>
                               </div>
-                              <button 
+                              <Button 
+                                variant="ghost"
+                                size="sm"
                                 onClick={() => handleEditClick(slot)}
-                                className="p-2 text-muted-foreground hover:text-primary transition-colors bg-muted/20 rounded-xl"
+                                className="h-8 w-8 p-0 text-muted-foreground hover:text-primary"
                               >
                                 <Edit2 className="h-4 w-4" />
-                              </button>
+                              </Button>
                             </div>
 
-                            <div className="flex items-center justify-between pt-2">
-                              <span className={cn(
-                                "text-[9px] font-black uppercase tracking-[0.1em] px-2 py-0.5 rounded-full border",
-                                slot.isAvailable ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-rose-50 text-rose-600 border-rose-100"
-                              )}>
-                                {slot.isAvailable ? "Active Online" : "Paused / Offline"}
-                              </span>
+                            <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                              <Badge 
+                                variant={slot.isAvailable ? "default" : "secondary"} 
+                                className={cn(
+                                  "font-medium", 
+                                  slot.isAvailable ? "bg-emerald-600 hover:bg-emerald-700" : ""
+                                )}
+                              >
+                                {slot.isAvailable ? "Online" : "Offline"}
+                              </Badge>
                               
-                              <button
+                              <Button
+                                variant="link"
+                                size="sm"
                                 onClick={() => toggleAvailability(slot._id, slot.isAvailable)}
                                 className={cn(
-                                  "text-[10px] font-extrabold transition-all underline underline-offset-4",
+                                  "h-auto p-0 font-medium",
                                   slot.isAvailable ? "text-rose-600 hover:text-rose-700" : "text-emerald-600 hover:text-emerald-700"
                                 )}
                               >
-                                {slot.isAvailable ? "Go Offline" : "Go Online"}
-                              </button>
+                                {slot.isAvailable ? "Set Offline" : "Set Online"}
+                              </Button>
                             </div>
                           </div>
                         )}
                       </div>
-                    ))}
+                    )})}
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-10 rounded-2xl bg-muted/5 border border-dashed border-border/50">
-                    <Calendar className="h-8 w-8 text-muted-foreground/30 mb-2" />
-                    <p className="text-xs font-bold text-muted-foreground italic">No schedules defined for this day.</p>
+                  <div className="flex flex-col items-center justify-center py-10 rounded-lg bg-muted/20 border border-dashed text-center">
+                    <Calendar className="h-8 w-8 text-muted-foreground/50 mb-3" />
+                    <p className="text-sm font-medium text-foreground">No slots scheduled.</p>
                   </div>
                 )}
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           ))
         )}
       </div>
 
        {/* Quick Legend/Tip */}
-       <div className="flex items-center gap-3 px-6 py-4 bg-primary/5 rounded-3xl border border-dashed border-primary/20">
-          <AlertCircle className="h-4 w-4 text-primary" />
-          <p className="text-[10px] font-bold text-muted-foreground leading-relaxed">
-            <span className="text-primary uppercase tracking-widest">Enterprise Feature:</span> You can update the day and start time of any slot directly. End times are automatically re-calculated to maintain the required 2-hour consultation window.
+       <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg flex gap-3 text-blue-800">
+          <AlertCircle className="h-5 w-5 shrink-0" />
+          <p className="text-sm">
+             <strong>Schedule Editing Note:</strong> You can update the day and start time of an unbooked slot directly. End times are automatically re-calculated to match the established 2-hour window. Slots with active appointments cannot be modified or set to offline.
           </p>
        </div>
     </div>
