@@ -5,10 +5,74 @@ import { fetchAppointmentByIdForUser } from "./appointmentClient.js";
 
 const allowedStatuses = ["draft", "finalized"];
 
+let authDbConnection = null;
+let AuthUserModel = null;
+
 const createServiceError = (statusCode, message) => {
   const error = new Error(message);
   error.statusCode = statusCode;
   return error;
+};
+
+const getAuthUserModel = async () => {
+  if (AuthUserModel) {
+    return AuthUserModel;
+  }
+
+  const authMongoUri = process.env.AUTH_MONGO_URI;
+  if (!authMongoUri) {
+    throw createServiceError(500, "AUTH_MONGO_URI is not configured");
+  }
+
+  if (!authDbConnection || authDbConnection.readyState !== 1) {
+    authDbConnection = await mongoose.createConnection(authMongoUri).asPromise();
+  }
+
+  AuthUserModel = authDbConnection.model(
+    "User",
+    new mongoose.Schema(
+      {
+        name: String,
+        profilePhoto: String,
+      },
+      {
+        collection: "users",
+        versionKey: false,
+      },
+    ),
+  );
+
+  return AuthUserModel;
+};
+
+const attachDoctorToPrescription = async (prescriptionDoc) => {
+  if (!prescriptionDoc) return null;
+
+  const prescription = prescriptionDoc.toObject
+    ? prescriptionDoc.toObject()
+    : prescriptionDoc;
+
+  try {
+    const User = await getAuthUserModel();
+    const doctor = await User.findById(prescription.doctorUserId)
+      .select("name profilePhoto")
+      .lean();
+
+    if (doctor) {
+      prescription.doctor = {
+        name: doctor.name,
+        photo: doctor.profilePhoto,
+      };
+      prescription.doctorName = doctor.name;
+    }
+  } catch (error) {
+    console.error(
+      `Failed to attach doctor info to prescription ${prescription?._id}:`,
+      error.message,
+    );
+  }
+
+  return prescription;
 };
 
 const ensureDoctorRole = (user, action) => {
@@ -196,7 +260,8 @@ export const listOwnPatientPrescriptions = async ({ requester, query = {} }) => 
     }
   }
 
-  return DoctorPrescription.find(filter).sort({ createdAt: -1 });
+  const prescriptions = await DoctorPrescription.find(filter).sort({ createdAt: -1 });
+  return Promise.all(prescriptions.map((prescription) => attachDoctorToPrescription(prescription)));
 };
 
 export const getPrescriptionById = async ({ requester, prescriptionId }) => {
@@ -218,7 +283,7 @@ export const getPrescriptionById = async ({ requester, prescriptionId }) => {
     throw createServiceError(403, "Access denied");
   }
 
-  return prescription;
+  return attachDoctorToPrescription(prescription);
 };
 
 export const getPrescriptionByAppointmentId = async ({ requester, appointmentId }) => {
@@ -234,5 +299,5 @@ export const getPrescriptionByAppointmentId = async ({ requester, appointmentId 
     throw createServiceError(403, "Access denied");
   }
 
-  return prescription;
+  return attachDoctorToPrescription(prescription);
 };
