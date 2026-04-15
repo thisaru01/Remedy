@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Activity, AlertTriangle, Brain, Stethoscope } from "lucide-react";
 
@@ -38,7 +38,7 @@ function getUrgencyBadgeClasses(urgency) {
 }
 
 export default function RemdedyAiPage() {
-  const { isAuthenticated, role } = useAuth();
+  const { isAuthenticated, role, userId } = useAuth();
   const isPatient = isAuthenticated && role === "patient";
 
   const [symptoms, setSymptoms] = useState("");
@@ -50,6 +50,41 @@ export default function RemdedyAiPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [assessment, setAssessment] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [selectedHistoryId, setSelectedHistoryId] = useState(null);
+
+  // Load saved history for this patient from the API
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchHistory() {
+      if (!isPatient || !userId) {
+        setHistory([]);
+        return;
+      }
+
+      try {
+        const response = await axios.get("/ai/symptom-check/history", {
+          params: { limit: 20 },
+        });
+        const items = response?.data?.items ?? [];
+        if (!cancelled) {
+          setHistory(items);
+          setSelectedHistoryId(null);
+        }
+      } catch {
+        if (!cancelled) {
+          setHistory([]);
+        }
+      }
+    }
+
+    fetchHistory();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isPatient, userId]);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -74,6 +109,21 @@ export default function RemdedyAiPage() {
       const response = await axios.post("/ai/symptom-check", payload);
       const nextAssessment = response?.data?.assessment ?? null;
       setAssessment(nextAssessment);
+      setSelectedHistoryId(null);
+
+      if (nextAssessment && userId) {
+        const entry = {
+          id: Date.now(),
+          createdAt: new Date().toISOString(),
+          input: payload,
+          assessment: nextAssessment,
+        };
+
+        setHistory((prev) => {
+          const next = [entry, ...prev].slice(0, 20);
+          return next;
+        });
+      }
     } catch (err) {
       setAssessment(null);
 
@@ -415,6 +465,74 @@ export default function RemdedyAiPage() {
                       advice, diagnosis, or treatment.
                     </p>
                   </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-sm">
+                  <Activity className="h-4 w-4 text-slate-500" />
+                  Previous assessments
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Your recent Remedy AI assessments. Select one to view its
+                  full overview again.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2 text-xs text-slate-600">
+                {isPatient ? (
+                  history.length > 0 ? (
+                    <ul className="space-y-1 max-h-56 overflow-y-auto pr-1">
+                      {history.map((entry) => {
+                        const created = new Date(entry.createdAt);
+                        const summary = entry?.input?.symptoms || "Symptoms";
+                        const urgencyLabel = entry?.assessment?.urgency;
+                        const isSelected = selectedHistoryId === entry.id;
+
+                        return (
+                          <li
+                            key={entry.id}
+                            className={`cursor-pointer rounded-md border px-3 py-2 transition-colors ${
+                              isSelected
+                                ? "border-emerald-300 bg-emerald-50/70"
+                                : "border-slate-100 bg-slate-50 hover:border-emerald-200 hover:bg-emerald-50/40"
+                            }`}
+                            onClick={() => {
+                              setAssessment(entry.assessment);
+                              setSelectedHistoryId(entry.id);
+                            }}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="space-y-0.5">
+                                <p className="font-medium text-slate-900 line-clamp-1">
+                                  {summary}
+                                </p>
+                                <p className="text-[0.7rem] text-slate-500">
+                                  {created.toLocaleString()}
+                                </p>
+                              </div>
+                              {urgencyLabel && (
+                                <Badge
+                                  variant="outline"
+                                  className={
+                                    "border text-[0.65rem] font-semibold capitalize " +
+                                    getUrgencyBadgeClasses(urgencyLabel)
+                                  }
+                                >
+                                  {urgencyLabel}
+                                </Badge>
+                              )}
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : (
+                    <p>No previous assessments saved yet on this device.</p>
+                  )
+                ) : (
+                  <p>Sign in as a patient to keep a local history.</p>
                 )}
               </CardContent>
             </Card>
