@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { CheckCircle2 } from "lucide-react";
 
 import { getAppointments } from "@/api/services/appointmentService";
@@ -129,13 +128,9 @@ export default function ApprovedAppointments() {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {appointments.map((appointment) => (
-        <Link
-          key={appointment._id}
-          to={`/doctor/appointments/detail/${appointment._id}`}
-          className="block no-underline hover:opacity-95"
-        >
+        <div key={appointment._id} className="cursor-default">
           <AppointmentCard appointment={appointment} />
-        </Link>
+        </div>
       ))}
     </div>
   );

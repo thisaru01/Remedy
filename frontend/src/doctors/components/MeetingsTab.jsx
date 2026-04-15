@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { getSessionByAppointmentId, getSessionJoinDetails } from "@/api/services/telemedicineService";
 import { Button } from "@/components/ui/button";
-import { Video } from "lucide-react";
+import { Video, UserRound } from "lucide-react";
 
-export default function MeetingsTab({ appointmentId }) {
+export default function MeetingsTab({ appointmentId, isCompleted }) {
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState(null);
   const [joining, setJoining] = useState(false);
@@ -49,30 +49,59 @@ export default function MeetingsTab({ appointmentId }) {
     }
   };
 
-  if (loading) return <div className="text-sm text-muted-foreground">Loading meetings...</div>;
-  if (error) return <div className="text-sm text-destructive">Error: {error}</div>;
-  if (!session) return <div className="text-sm text-muted-foreground">No meetings scheduled for this appointment.</div>;
+  if (isCompleted) return null;
+
+  if (loading) return (
+    <div className="rounded-lg border p-4 text-sm text-muted-foreground">
+      Loading meeting details...
+    </div>
+  );
+  if (error) return (
+    <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+      {error}
+    </div>
+  );
+  if (!session) return (
+    <div className="rounded-lg border p-4 text-sm text-muted-foreground text-center">
+      No meeting has been scheduled for this appointment yet.
+    </div>
+  );
+
+  const statusStyles = session.status === "scheduled" || session.status === "active"
+    ? "bg-foreground text-background"
+    : "bg-muted text-muted-foreground";
 
   return (
-    <div className="rounded-lg border p-4 space-y-3">
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-muted-foreground">Status:</span>
-        <span className="text-sm capitalize font-medium">{session.status}</span>
+    <div className="rounded-lg border overflow-hidden max-w-sm">
+      {/* Header bar */}
+      <div className="border-b px-4 py-3 flex items-center justify-between">
+        <h3 className="text-sm font-semibold tracking-tight">Meeting Details</h3>
+        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${statusStyles}`}>
+          <span className="size-1.5 rounded-full bg-current opacity-70" />
+          {session.status}
+        </span>
       </div>
-      {session.patientName && (
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">Patient:</span>
-          <span className="text-sm font-medium">{session.patientName}</span>
-        </div>
-      )}
-      <div>
+
+      {/* Info rows */}
+      <div className="px-4 py-3 space-y-2">
+        {session.patientName && (
+          <div className="flex items-center gap-3">
+            <UserRound size={15} className="text-muted-foreground shrink-0" />
+            <span className="text-xs text-muted-foreground w-16 shrink-0">Patient</span>
+            <span className="text-sm font-medium">{session.patientName}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Footer action */}
+      <div className="border-t px-4 py-3">
         <Button
           size="sm"
-          className="gap-1.5"
+          className="gap-2 px-4"
           disabled={joining}
           onClick={handleJoin}
         >
-          <Video size={15} />
+          <Video size={16} />
           {joining ? "Joining..." : "Join Meeting"}
         </Button>
       </div>
