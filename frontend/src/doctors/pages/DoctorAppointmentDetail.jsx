@@ -81,6 +81,13 @@ export default function DoctorAppointmentDetail() {
   };
 
   const isAlreadyCompleted = appointment?.status === "completed";
+
+  useEffect(() => {
+    if (isAlreadyCompleted && activeTab === "create-meeting") {
+      setActiveTab("meetings");
+    }
+  }, [isAlreadyCompleted, activeTab]);
+
   const canCompleteAppointment =
     appointment?.status === "accepted" &&
     appointment?.paymentStatus === "success" &&
@@ -107,7 +114,9 @@ export default function DoctorAppointmentDetail() {
       <div className="pt-4">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList variant="line">
-            <TabsTrigger value="create-meeting">Create Meeting</TabsTrigger>
+            {!isAlreadyCompleted && (
+              <TabsTrigger value="create-meeting">Create Meeting</TabsTrigger>
+            )}
             <TabsTrigger value="meetings">Meetings</TabsTrigger>
             <TabsTrigger value="prescriptions">Prescriptions</TabsTrigger>
             <TabsTrigger value="reports">Reports</TabsTrigger>
@@ -143,7 +152,7 @@ export default function DoctorAppointmentDetail() {
                 })()}
               </div>
             )}
-            <MeetingsTab appointmentId={appointmentId} patientId={appointment?.patientId} />
+            <MeetingsTab appointmentId={appointmentId} patientId={appointment?.patientId} isCompleted={isAlreadyCompleted} />
           </TabsContent>
 
           <TabsContent value="prescriptions" className="mt-4">

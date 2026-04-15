@@ -4,7 +4,7 @@ import { getAppointment } from "@/api/services/appointmentService";
 import { getSchedule } from "@/api/services/scheduleService";
 import { getDoctorDetails } from "@/api/services/doctorService";
 import { Button } from "@/components/ui/button";
-import { Video } from "lucide-react";
+import { Video, UserRound, CalendarDays, Clock } from "lucide-react";
 
 function getNextScheduledDate(createdAt, dayName) {
   const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -106,44 +106,75 @@ export default function MeetingsTab({ appointmentId }) {
     }
   };
 
-  if (loading) return <div className="text-sm text-muted-foreground">Loading meetings...</div>;
-  if (error) return <div className="text-sm text-destructive">Error: {error}</div>;
-  if (!session) return <div className="text-sm text-muted-foreground">No meetings scheduled for this appointment.</div>;
+  if (loading) return (
+    <div className="rounded-lg border p-6 text-sm text-muted-foreground">
+      Loading meeting details...
+    </div>
+  );
+  if (error) return (
+    <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+      {error}
+    </div>
+  );
+  if (!session) return (
+    <div className="rounded-lg border p-6 text-sm text-muted-foreground text-center">
+      No meeting has been scheduled for this appointment yet.
+    </div>
+  );
+
+  const statusStyles = session.status === "scheduled"
+    ? "bg-foreground text-background"
+    : session.status === "active"
+    ? "bg-foreground text-background"
+    : "bg-muted text-muted-foreground";
 
   return (
-    <div className="rounded-lg border p-4 space-y-3">
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-muted-foreground">Status:</span>
-        <span className="text-sm capitalize font-medium">{session.status}</span>
+    <div className="rounded-lg border overflow-hidden max-w-sm">
+      {/* Header bar */}
+      <div className="border-b px-4 py-3 flex items-center justify-between">
+        <h3 className="text-sm font-semibold tracking-tight">Meeting Details</h3>
+        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${statusStyles}`}>
+          <span className="size-1.5 rounded-full bg-current opacity-70" />
+          {session.status}
+        </span>
       </div>
-      {doctorName && (
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">Doctor:</span>
-          <span className="text-sm font-medium">{doctorName}</span>
-        </div>
-      )}
-      {scheduleInfo && (
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">Schedule:</span>
-          <span className="text-sm font-medium">
-            {scheduleInfo.day} · {scheduleInfo.startTime}{scheduleInfo.endTime ? ` - ${scheduleInfo.endTime}` : ""}
-          </span>
-        </div>
-      )}
-      {scheduledDate && (
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">Scheduled:</span>
-          <span className="text-sm font-medium">{scheduledDate}</span>
-        </div>
-      )}
-      <div>
+
+      {/* Info rows */}
+      <div className="px-4 py-3 space-y-2">
+        {doctorName && (
+          <div className="flex items-center gap-3">
+            <UserRound size={15} className="text-muted-foreground shrink-0" />
+            <span className="text-xs text-muted-foreground w-20 shrink-0">Doctor</span>
+            <span className="text-sm font-medium">{doctorName}</span>
+          </div>
+        )}
+        {scheduleInfo && (
+          <div className="flex items-center gap-3">
+            <CalendarDays size={15} className="text-muted-foreground shrink-0" />
+            <span className="text-xs text-muted-foreground w-20 shrink-0">Schedule</span>
+            <span className="text-sm font-medium">
+              {scheduleInfo.day} · {scheduleInfo.startTime}{scheduleInfo.endTime ? ` – ${scheduleInfo.endTime}` : ""}
+            </span>
+          </div>
+        )}
+        {scheduledDate && (
+          <div className="flex items-center gap-3">
+            <Clock size={15} className="text-muted-foreground shrink-0" />
+            <span className="text-xs text-muted-foreground w-20 shrink-0">Scheduled</span>
+            <span className="text-sm font-semibold">{scheduledDate}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Footer action */}
+      <div className="border-t px-4 py-3">
         <Button
           size="sm"
-          className="gap-1.5"
+          className="gap-2 px-4"
           disabled={joining}
           onClick={handleJoin}
         >
-          <Video size={15} />
+          <Video size={16} />
           {joining ? "Joining..." : "Join Meeting"}
         </Button>
       </div>
