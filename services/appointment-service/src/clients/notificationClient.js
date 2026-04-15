@@ -23,6 +23,7 @@ const getNotificationServiceTimeoutMs = () => {
 
 export const sendAppointmentConfirmationEmail = async ({
   to,
+  phoneTo,
   patientName,
   doctorName,
   appointmentDateTime,
@@ -38,6 +39,7 @@ export const sendAppointmentConfirmationEmail = async ({
     `${notificationServiceUrl}/api/notifications/email/appointment-confirmation`,
     {
       to,
+      phoneTo,
       recipientType,
       patientName,
       doctorName,

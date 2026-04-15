@@ -31,11 +31,38 @@ const buildPrompt = ({ symptoms, age, gender, duration, additionalInfo }) => {
 };
 
 const safeParseJson = (text) => {
+  if (!text || typeof text !== "string") return null;
+
+  // Trim and try direct parse first
+  const raw = text.trim();
   try {
-    return JSON.parse(text);
-  } catch (err) {
-    return null;
+    return JSON.parse(raw);
+  } catch {}
+
+  // Handle common LLM patterns like ```json ... ``` or ``` ... ```
+  let cleaned = raw;
+
+  if (cleaned.startsWith("```")) {
+    cleaned = cleaned.replace(/^```json/i, "");
+    cleaned = cleaned.replace(/^```/, "");
+    if (cleaned.endsWith("```")) {
+      cleaned = cleaned.slice(0, -3);
+    }
+    cleaned = cleaned.trim();
   }
+
+  // Fallback: try to extract the first top-level JSON object from the text
+  if (!cleaned) cleaned = raw;
+  const firstBrace = cleaned.indexOf("{");
+  const lastBrace = cleaned.lastIndexOf("}");
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    const candidate = cleaned.slice(firstBrace, lastBrace + 1);
+    try {
+      return JSON.parse(candidate);
+    } catch {}
+  }
+
+  return null;
 };
 
 export const generateSymptomAssessment = async (input) => {
