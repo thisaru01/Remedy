@@ -33,6 +33,30 @@ class NotificationController {
           appointmentDateTime,
           appointmentNumber,
         });
+      } else if (recipientType === "patient-completed") {
+        await this.emailService.sendPatientAppointmentCompleted({
+          to,
+          patientName,
+          doctorName,
+          appointmentDateTime,
+          appointmentNumber,
+        });
+      } else if (recipientType === "doctor-completed") {
+        await this.emailService.sendDoctorAppointmentCompleted({
+          to,
+          patientName,
+          doctorName,
+          appointmentDateTime,
+          appointmentNumber,
+        });
+      } else if (recipientType === "doctor-payment-success") {
+        await this.emailService.sendDoctorPaymentSuccess({
+          to,
+          patientName,
+          doctorName,
+          appointmentDateTime,
+          appointmentNumber,
+        });
       } else {
         // Default to patient-style email when recipientType is missing or "patient"
         await this.emailService.sendPatientAppointmentPending({

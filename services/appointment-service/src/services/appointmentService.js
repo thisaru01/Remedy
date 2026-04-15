@@ -195,6 +195,95 @@ const sendAppointmentNotificationsSafe = async ({ appointment, schedule }) => {
   }
 };
 
+const sendAppointmentCompletedNotificationsSafe = async ({ appointment }) => {
+  try {
+    if (!appointment) return;
+
+    const [patientUser, doctorUser, scheduleResponse] = await Promise.all([
+      fetchUserByIdInternal(String(appointment.patientId)),
+      fetchUserByIdInternal(String(appointment.doctorId)),
+      appointment.scheduleId
+        ? axios.get(
+            `${DOCTOR_SERVICE_BASE_URL}/api/doctor-schedules/schedule/${appointment.scheduleId}`,
+          )
+        : Promise.resolve(null),
+    ]);
+
+    const schedule = scheduleResponse
+      ? scheduleResponse.data?.schedule || scheduleResponse.data
+      : undefined;
+
+    const appointmentDateTime = formatScheduleTime(schedule);
+    const appointmentNumber = appointment.appointmentNumber;
+
+    if (patientUser?.email) {
+      await sendAppointmentConfirmationEmail({
+        to: patientUser.email,
+        patientName: patientUser.name,
+        doctorName: doctorUser?.name,
+        appointmentDateTime,
+        recipientType: "patient-completed",
+        appointmentNumber,
+      });
+    }
+
+    if (doctorUser?.email) {
+      await sendAppointmentConfirmationEmail({
+        to: doctorUser.email,
+        patientName: patientUser?.name,
+        doctorName: doctorUser.name,
+        appointmentDateTime,
+        recipientType: "doctor-completed",
+        appointmentNumber,
+      });
+    }
+  } catch (error) {
+    console.error("Failed to send appointment completed notifications", {
+      appointmentId: appointment?._id,
+      error: error?.message,
+    });
+  }
+};
+
+const sendPaymentSuccessNotificationSafe = async ({ appointment }) => {
+  try {
+    if (!appointment) return;
+
+    const [patientUser, doctorUser, scheduleResponse] = await Promise.all([
+      fetchUserByIdInternal(String(appointment.patientId)),
+      fetchUserByIdInternal(String(appointment.doctorId)),
+      appointment.scheduleId
+        ? axios.get(
+            `${DOCTOR_SERVICE_BASE_URL}/api/doctor-schedules/schedule/${appointment.scheduleId}`,
+          )
+        : Promise.resolve(null),
+    ]);
+
+    const schedule = scheduleResponse
+      ? scheduleResponse.data?.schedule || scheduleResponse.data
+      : undefined;
+
+    const appointmentDateTime = formatScheduleTime(schedule);
+    const appointmentNumber = appointment.appointmentNumber;
+
+    if (doctorUser?.email) {
+      await sendAppointmentConfirmationEmail({
+        to: doctorUser.email,
+        patientName: patientUser?.name,
+        doctorName: doctorUser.name,
+        appointmentDateTime,
+        recipientType: "doctor-payment-success",
+        appointmentNumber,
+      });
+    }
+  } catch (error) {
+    console.error("Failed to send payment success notification", {
+      appointmentId: appointment?._id,
+      error: error?.message,
+    });
+  }
+};
+
 const attachUserNamesToAppointment = async (appointmentDoc) => {
   if (!appointmentDoc) return null;
 
@@ -629,6 +718,11 @@ export const updatePaymentStatus = async (id, requester, paymentStatus) => {
   appointment.paymentStatus = paymentStatus;
   await appointment.save();
 
+  if (paymentStatus === "success") {
+    // Fire-and-forget email to doctor about successful payment.
+    void sendPaymentSuccessNotificationSafe({ appointment });
+  }
+
   return attachUserNamesToAppointment(appointment);
 };
 
@@ -673,6 +767,9 @@ export const completeAppointment = async (id, requester) => {
 
   appointment.status = "completed";
   await appointment.save();
+
+  // Fire-and-forget emails to both doctor and patient about completion.
+  void sendAppointmentCompletedNotificationsSafe({ appointment });
 
   return attachUserNamesToAppointment(appointment);
 };

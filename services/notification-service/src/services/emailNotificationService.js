@@ -6,6 +6,9 @@ import {
   renderPatientAppointmentEmail,
   renderPatientAppointmentAcceptedEmail,
   renderDoctorAppointmentEmail,
+  renderPatientAppointmentCompletedEmail,
+  renderDoctorAppointmentCompletedEmail,
+  renderDoctorPaymentSuccessEmail,
 } from "../templates/appointmentConfirmationTemplate.js";
 
 export class EmailNotificationService {
@@ -106,6 +109,120 @@ export class EmailNotificationService {
     }.${appointmentNumber ? ` Appointment number: ${appointmentNumber}.` : ""} Please review and take action.`;
 
     const html = renderDoctorAppointmentEmail({
+      patientName,
+      doctorName,
+      appointmentDateTime,
+      appointmentNumber,
+    });
+
+    const mailOptions = {
+      from: this.defaultFrom,
+      to,
+      subject,
+      text,
+      html,
+    };
+
+    await this.transporter.sendMail(mailOptions);
+  }
+
+  async sendPatientAppointmentCompleted({
+    to,
+    patientName,
+    doctorName,
+    appointmentDateTime,
+    appointmentNumber,
+  }) {
+    if (!to) {
+      throw new Error("Recipient email 'to' is required");
+    }
+
+    const subject = "Appointment completed";
+    const text = `Hi ${patientName || "there"}, your appointment with ${
+      doctorName || "your doctor"
+    } for ${
+      appointmentDateTime || "the scheduled time"
+    } has been marked as completed.${
+      appointmentNumber ? ` Appointment number: ${appointmentNumber}.` : ""
+    }`;
+
+    const html = renderPatientAppointmentCompletedEmail({
+      patientName,
+      doctorName,
+      appointmentDateTime,
+      appointmentNumber,
+    });
+
+    const mailOptions = {
+      from: this.defaultFrom,
+      to,
+      subject,
+      text,
+      html,
+    };
+
+    await this.transporter.sendMail(mailOptions);
+  }
+
+  async sendDoctorAppointmentCompleted({
+    to,
+    patientName,
+    doctorName,
+    appointmentDateTime,
+    appointmentNumber,
+  }) {
+    if (!to) {
+      throw new Error("Recipient email 'to' is required");
+    }
+
+    const subject = "Appointment marked as completed";
+    const text = `Hi ${
+      doctorName || "Doctor"
+    }, the appointment with ${patientName || "a patient"} for ${
+      appointmentDateTime || "the scheduled time"
+    } has been marked as completed.${
+      appointmentNumber ? ` Appointment number: ${appointmentNumber}.` : ""
+    }`;
+
+    const html = renderDoctorAppointmentCompletedEmail({
+      patientName,
+      doctorName,
+      appointmentDateTime,
+      appointmentNumber,
+    });
+
+    const mailOptions = {
+      from: this.defaultFrom,
+      to,
+      subject,
+      text,
+      html,
+    };
+
+    await this.transporter.sendMail(mailOptions);
+  }
+
+  async sendDoctorPaymentSuccess({
+    to,
+    patientName,
+    doctorName,
+    appointmentDateTime,
+    appointmentNumber,
+  }) {
+    if (!to) {
+      throw new Error("Recipient email 'to' is required");
+    }
+
+    const subject = "Payment received for appointment";
+    const text = `Hi ${
+      doctorName || "Doctor"
+    }, a payment has been recorded as successful for the appointment with ${
+      patientName || "a patient"
+    } for ${appointmentDateTime || "the scheduled time"}.${
+      appointmentNumber ? ` Appointment number: ${appointmentNumber}.` : ""
+    }`;
+
+    const html = renderDoctorPaymentSuccessEmail({
       patientName,
       doctorName,
       appointmentDateTime,
