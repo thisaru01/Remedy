@@ -22,5 +22,17 @@ export const createAiRoutes = ({ protect, proxyTo, services }) => {
     }),
   );
 
+  // Patients can fetch their previous AI assessments
+  router.get(
+    "/api/ai/symptom-check/history",
+    protect,
+    authorizeRoles("patient"),
+    proxyTo(services.ai, {
+      addUserContext: true,
+      basePath: "/api/ai/symptom-check",
+      timeoutMs: 8000,
+    }),
+  );
+
   return router;
 };

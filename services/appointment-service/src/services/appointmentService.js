@@ -115,36 +115,43 @@ const formatScheduleTime = (schedule) => {
   return `${day} ${startTime}`;
 };
 
-const attachUserNamesToAppointment = async (appointmentDoc) => {
-  if (!appointmentDoc) return null;
-
-  const appointment = appointmentDoc.toObject
-    ? appointmentDoc.toObject()
-    : appointmentDoc;
-
+const sendAppointmentAcceptedNotificationSafe = async ({ appointment }) => {
   try {
-    const [patientUser, doctorUser] = await Promise.all([
+    if (!appointment) return;
+
+    const [patientUser, doctorUser, scheduleResponse] = await Promise.all([
       fetchUserByIdInternal(String(appointment.patientId)),
       fetchUserByIdInternal(String(appointment.doctorId)),
+      appointment.scheduleId
+        ? axios.get(
+            `${DOCTOR_SERVICE_BASE_URL}/api/doctor-schedules/schedule/${appointment.scheduleId}`,
+          )
+        : Promise.resolve(null),
     ]);
 
-    if (patientUser) {
-      appointment.patientName = patientUser.name;
-      appointment.patientPhoto = patientUser.profilePhoto;
-    }
+    const schedule = scheduleResponse
+      ? scheduleResponse.data?.schedule || scheduleResponse.data
+      : undefined;
 
-    if (doctorUser) {
-      appointment.doctorName = doctorUser.name;
-      appointment.doctorPhoto = doctorUser.profilePhoto;
+    const appointmentDateTime = formatScheduleTime(schedule);
+    const appointmentNumber = appointment.appointmentNumber;
+
+    if (patientUser?.email) {
+      await sendAppointmentConfirmationEmail({
+        to: patientUser.email,
+        patientName: patientUser.name,
+        doctorName: doctorUser?.name,
+        appointmentDateTime,
+        recipientType: "patient-accepted",
+        appointmentNumber,
+      });
     }
   } catch (error) {
-    console.error("Failed to attach appointment user info", {
+    console.error("Failed to send appointment accepted notification", {
       appointmentId: appointment?._id,
       error: error?.message,
     });
   }
-
-  return appointment;
 };
 
 const sendAppointmentNotificationsSafe = async ({ appointment, schedule }) => {
@@ -186,6 +193,38 @@ const sendAppointmentNotificationsSafe = async ({ appointment, schedule }) => {
       error: error?.message,
     });
   }
+};
+
+const attachUserNamesToAppointment = async (appointmentDoc) => {
+  if (!appointmentDoc) return null;
+
+  const appointment = appointmentDoc.toObject
+    ? appointmentDoc.toObject()
+    : appointmentDoc;
+
+  try {
+    const [patientUser, doctorUser] = await Promise.all([
+      fetchUserByIdInternal(String(appointment.patientId)),
+      fetchUserByIdInternal(String(appointment.doctorId)),
+    ]);
+
+    if (patientUser) {
+      appointment.patientName = patientUser.name;
+      appointment.patientPhoto = patientUser.profilePhoto;
+    }
+
+    if (doctorUser) {
+      appointment.doctorName = doctorUser.name;
+      appointment.doctorPhoto = doctorUser.profilePhoto;
+    }
+  } catch (error) {
+    console.error("Failed to attach appointment user info", {
+      appointmentId: appointment?._id,
+      error: error?.message,
+    });
+  }
+
+  return appointment;
 };
 
 export const createAppointment = async (data) => {
@@ -238,7 +277,9 @@ export const createAppointment = async (data) => {
 export const getAppointments = async (filter = {}) => {
   const appointments = await Appointment.find(filter).sort({ createdAt: -1 });
   return Promise.all(
-    appointments.map((appointment) => attachUserNamesToAppointment(appointment)),
+    appointments.map((appointment) =>
+      attachUserNamesToAppointment(appointment),
+    ),
   );
 };
 
@@ -311,6 +352,9 @@ export const acceptAppointment = async (id, requester) => {
 
   appointment.status = "accepted";
   await appointment.save();
+
+  // Fire-and-forget email notification to patient about acceptance.
+  void sendAppointmentAcceptedNotificationSafe({ appointment });
 
   return attachUserNamesToAppointment(appointment);
 };

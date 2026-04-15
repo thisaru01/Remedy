@@ -177,6 +177,7 @@ services:
       PORT: 5000
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-dev_internal_token_change_me}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash-lite}
+      MONGO_URI: ${AI_MONGO_URI:?AI_MONGO_URI is required}
     ports:
       - "5008:5000"
