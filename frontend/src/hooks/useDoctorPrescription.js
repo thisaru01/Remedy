@@ -20,9 +20,17 @@ export const useDoctorPrescription = (appointmentId) => {
       const response = await getDoctorPrescriptionByAppointmentId(appointmentId);
       setPrescription(response.data?.prescription || response.data);
     } catch (err) {
-      if (err.response?.status === 404) {
-        // Not found is fine, it means no prescription exists yet (form mode)
+      const status = err.response?.status;
+      const message = String(err.response?.data?.message || err.message || "").toLowerCase();
+      const missingPrescription =
+        status === 404 ||
+        message.includes("not found") ||
+        message.includes("no prescription");
+
+      if (missingPrescription) {
+        // No prescription yet is a normal state; keep the form visible without an error toast.
         setPrescription(null);
+        setError(null);
         return;
       }
 
