@@ -74,7 +74,7 @@ export default function DoctorAppointmentDetail() {
           </TabsContent>
 
           <TabsContent value="reports" className="mt-4">
-            <ReportsTab />
+            <ReportsTab appointmentId={appointmentId} />
           </TabsContent>
         </Tabs>
       </div>
