@@ -55,6 +55,7 @@ export default function PatientReportCard({
   onDelete,
   onShare,
   isDeleting,
+  allowEditDelete = true,
 }) {
   const isLinkedToAppointment = Boolean(report?.appointmentId);
   const sharedCount = Array.isArray(report?.sharedWith)
@@ -102,7 +103,7 @@ export default function PatientReportCard({
 
       <CardContent className="flex-1 space-y-2 text-xs text-muted-foreground">
         {report?.description ? (
-          <p className="line-clamp-3 whitespace-pre-wrap break-words text-[0.78rem] leading-snug">
+          <p className="line-clamp-3 whitespace-pre-wrap wrap-break-word text-[0.78rem] leading-snug">
             {report.description}
           </p>
         ) : (
@@ -151,25 +152,29 @@ export default function PatientReportCard({
         </div>
 
         <div className="flex items-center gap-1.5">
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            type="button"
-            onClick={() => onEdit?.(report)}
-          >
-            <Pencil className="h-3.5 w-3.5" />
-            <span className="sr-only">Edit</span>
-          </Button>
-          <Button
-            variant="destructive"
-            size="icon-xs"
-            type="button"
-            disabled={isDeleting}
-            onClick={() => onDelete?.(report)}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            <span className="sr-only">Delete</span>
-          </Button>
+          {allowEditDelete && (
+            <>
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                type="button"
+                onClick={() => onEdit?.(report)}
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                <span className="sr-only">Edit</span>
+              </Button>
+              <Button
+                variant="destructive"
+                size="icon-xs"
+                type="button"
+                disabled={isDeleting}
+                onClick={() => onDelete?.(report)}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                <span className="sr-only">Delete</span>
+              </Button>
+            </>
+          )}
         </div>
       </CardFooter>
     </Card>
