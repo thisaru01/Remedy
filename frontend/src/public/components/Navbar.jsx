@@ -52,7 +52,7 @@ export default function Navbar() {
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-4 py-2">
         <Link
           to="/"
-          className="flex items-center gap-2 py-1 text-lg font-bold text-blue-600"
+          className="flex items-center gap-2 py-1 text-xl font-bold text-blue-600"
         >
           <span>Remedy</span>
         </Link>
