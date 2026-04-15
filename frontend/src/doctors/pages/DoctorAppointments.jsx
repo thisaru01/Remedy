@@ -1,6 +1,7 @@
 import { useParams } from "react-router-dom";
 import PaidAppointments from "@/doctors/components/PaidAppointments.jsx";
 import PendingAppointments from "@/doctors/components/PendingAppointments.jsx";
+import ApprovedAppointments from "@/doctors/components/ApprovedAppointments.jsx";
 
 const LABELS = {
   pending: "Pending",
@@ -21,6 +22,7 @@ export default function DoctorAppointments() {
       </div>
 
       {status === "pending" && <PendingAppointments />}
+      {status === "approved" && <ApprovedAppointments />}
       {status === "paid" && <PaidAppointments />}
     </div>
   );
