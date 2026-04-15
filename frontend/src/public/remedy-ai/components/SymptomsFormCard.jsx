@@ -36,7 +36,7 @@ export function SymptomsFormCard({
   onSubmit,
 }) {
   return (
-    <Card className="shadow-sm">
+    <Card className="shadow-sm h-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Stethoscope className="h-5 w-5 text-emerald-600" />
@@ -137,7 +137,7 @@ export function SymptomsFormCard({
 
           {error && (
             <div className="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               <p>{error}</p>
             </div>
           )}

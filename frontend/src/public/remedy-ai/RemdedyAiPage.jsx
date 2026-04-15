@@ -169,7 +169,7 @@ export default function RemdedyAiPage() {
           </p>
         </header>
 
-        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <div className="grid items-stretch gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
           <SymptomsFormCard
             symptoms={symptoms}
             setSymptoms={setSymptoms}
