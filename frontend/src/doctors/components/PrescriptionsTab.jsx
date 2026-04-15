@@ -4,8 +4,10 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { PlusCircle, Trash2, FileText, Loader2, AlertCircle, Calendar } from "lucide-react";
+import { PlusCircle, Trash2, FileText, Loader2, AlertCircle, Calendar, Pill, Clock, Zap, AlertTriangle, Droplet } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 export default function PrescriptionsTab({ appointmentId, appointment }) {
   const { prescription, loading, error, submitting, fetchPrescription, submitPrescription } = useDoctorPrescription(appointmentId);
@@ -49,54 +51,124 @@ export default function PrescriptionsTab({ appointmentId, appointment }) {
             <CardTitle className="text-lg">Prescription Details</CardTitle>
           </CardHeader>
           <CardContent className="p-6 space-y-6">
-            <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Diagnosis</h4>
-              <p className="text-base font-medium">{prescription.diagnosis}</p>
+            {/* Diagnosis Section */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-blue-600" />
+                Clinical Diagnosis
+              </h4>
+              <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm leading-relaxed text-slate-800 whitespace-pre-wrap">{prescription.diagnosis}</p>
+              </div>
             </div>
 
             <div className="space-y-3">
-              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Medications</h4>
-              <div className="grid gap-3">
+              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                <Pill className="w-4 h-4 text-purple-600" />
+                Medications
+              </h4>
+              <div className="space-y-4">
                 {prescription.medications?.map((m, idx) => (
-                  <div key={idx} className="p-4 border rounded-lg bg-card shadow-sm flex flex-col md:flex-row md:items-start justify-between gap-4">
-                    <div>
-                      <div className="font-bold text-lg text-primary">{m.name}</div>
-                      <div className="text-sm text-foreground space-x-2 mt-1">
-                        <span className="font-medium bg-muted px-2 py-0.5 rounded">{m.dosage}</span>
-                        <span className="text-muted-foreground">•</span>
-                        <span>{m.frequency}</span>
-                        <span className="text-muted-foreground">•</span>
-                        <span>{m.duration}</span>
-                        {m.route && (
-                          <>
-                            <span className="text-muted-foreground">•</span>
-                            <span className="italic">{m.route}</span>
-                          </>
-                        )}
+                  <div key={idx} className="border rounded-lg bg-gradient-to-br from-purple-50/50 via-card to-blue-50/30 hover:shadow-md transition-all">
+                    <div className="p-5 space-y-4">
+                      {/* Medication Name & Badge */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <div className="text-lg font-bold text-slate-900">{m.name}</div>
+                          {m.route && (
+                            <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                              <Droplet className="w-3 h-3" />
+                              Route: <span className="font-medium">{m.route}</span>
+                            </div>
+                          )}
+                        </div>
+                        <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100 whitespace-nowrap">
+                          #{idx + 1}
+                        </Badge>
                       </div>
+
+                      {/* Main Medication Details Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                        {/* Dosage */}
+                        <div className="bg-white/60 rounded-lg p-3 border border-purple-100">
+                          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 mb-1">
+                            <Zap className="w-3.5 h-3.5 text-purple-600" />
+                            Dosage
+                          </div>
+                          <div className="text-sm font-bold text-slate-900 font-mono">{m.dosage}</div>
+                        </div>
+
+                        {/* Frequency */}
+                        <div className="bg-white/60 rounded-lg p-3 border border-blue-100">
+                          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 mb-1">
+                            <Clock className="w-3.5 h-3.5 text-blue-600" />
+                            Frequency
+                          </div>
+                          <div className="text-sm font-bold text-slate-900">{m.frequency}</div>
+                        </div>
+
+                        {/* Duration */}
+                        <div className="bg-white/60 rounded-lg p-3 border border-emerald-100">
+                          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 mb-1">
+                            <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+                            Duration
+                          </div>
+                          <div className="text-sm font-bold text-slate-900">{m.duration}</div>
+                        </div>
+
+                        {/* Status Badge */}
+                        <div className="bg-white/60 rounded-lg p-3 border border-green-100">
+                          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 mb-1">
+                            <FileText className="w-3.5 h-3.5 text-green-600" />
+                            Status
+                          </div>
+                          <div className="text-sm font-bold text-green-700">Active</div>
+                        </div>
+                      </div>
+
+                      {/* Notes Section */}
+                      {m.notes && (
+                        <>
+                          <Separator className="my-1" />
+                          <div className="bg-amber-50/80 border border-amber-200 rounded-lg p-3">
+                            <div className="text-xs font-semibold uppercase tracking-wider text-amber-800 flex items-center gap-1.5 mb-2">
+                              <AlertTriangle className="w-3.5 h-3.5" />
+                              Special Instructions
+                            </div>
+                            <p className="text-sm text-amber-900 leading-relaxed">{m.notes}</p>
+                          </div>
+                        </>
+                      )}
                     </div>
-                    {m.notes && (
-                      <div className="bg-muted/50 p-2 rounded text-sm text-muted-foreground max-w-xs w-full text-right md:text-left self-start">
-                        {m.notes}
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>
             </div>
 
             {prescription.advice && (
-              <div className="space-y-2 pt-4 border-t">
-                <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Medical Advice</h4>
-                <p className="whitespace-pre-wrap">{prescription.advice}</p>
+              <div className="space-y-3 pt-4 border-t">
+                <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-amber-600" />
+                  Medical Advice & Instructions
+                </h4>
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4">
+                  <p className="text-sm leading-relaxed text-slate-800 whitespace-pre-wrap">{prescription.advice}</p>
+                </div>
               </div>
             )}
 
+            {/* Follow-up Section */}
             {prescription.followUpDate && (
-              <div className="flex items-center gap-2 pt-4 border-t text-muted-foreground">
-                <Calendar className="w-4 h-4" />
-                <span className="font-medium">Recommended Follow-up:</span>
-                <span className="text-foreground">{new Date(prescription.followUpDate).toLocaleDateString()}</span>
+              <div className="pt-4 border-t">
+                <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-cyan-50 to-emerald-50 border border-cyan-200 rounded-lg">
+                  <div className="h-10 w-10 rounded-full bg-cyan-100 flex items-center justify-center">
+                    <Calendar className="w-5 h-5 text-cyan-700" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Recommended Follow-up</h4>
+                    <p className="text-base font-bold text-slate-900 mt-1">{new Date(prescription.followUpDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                  </div>
+                </div>
               </div>
             )}
           </CardContent>
