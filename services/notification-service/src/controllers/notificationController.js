@@ -25,6 +25,14 @@ class NotificationController {
           appointmentDateTime,
           appointmentNumber,
         });
+      } else if (recipientType === "patient-accepted") {
+        await this.emailService.sendPatientAppointmentAccepted({
+          to,
+          patientName,
+          doctorName,
+          appointmentDateTime,
+          appointmentNumber,
+        });
       } else {
         // Default to patient-style email when recipientType is missing or "patient"
         await this.emailService.sendPatientAppointmentPending({

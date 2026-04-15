@@ -115,6 +115,45 @@ const formatScheduleTime = (schedule) => {
   return `${day} ${startTime}`;
 };
 
+const sendAppointmentAcceptedNotificationSafe = async ({ appointment }) => {
+  try {
+    if (!appointment) return;
+
+    const [patientUser, doctorUser, scheduleResponse] = await Promise.all([
+      fetchUserByIdInternal(String(appointment.patientId)),
+      fetchUserByIdInternal(String(appointment.doctorId)),
+      appointment.scheduleId
+        ? axios.get(
+            `${DOCTOR_SERVICE_BASE_URL}/api/doctor-schedules/schedule/${appointment.scheduleId}`,
+          )
+        : Promise.resolve(null),
+    ]);
+
+    const schedule = scheduleResponse
+      ? scheduleResponse.data?.schedule || scheduleResponse.data
+      : undefined;
+
+    const appointmentDateTime = formatScheduleTime(schedule);
+    const appointmentNumber = appointment.appointmentNumber;
+
+    if (patientUser?.email) {
+      await sendAppointmentConfirmationEmail({
+        to: patientUser.email,
+        patientName: patientUser.name,
+        doctorName: doctorUser?.name,
+        appointmentDateTime,
+        recipientType: "patient-accepted",
+        appointmentNumber,
+      });
+    }
+  } catch (error) {
+    console.error("Failed to send appointment accepted notification", {
+      appointmentId: appointment?._id,
+      error: error?.message,
+    });
+  }
+};
+
 const sendAppointmentNotificationsSafe = async ({ appointment, schedule }) => {
   try {
     if (!appointment) return;
@@ -276,6 +315,9 @@ export const acceptAppointment = async (id, requester) => {
 
   appointment.status = "accepted";
   await appointment.save();
+
+  // Fire-and-forget email notification to patient about acceptance.
+  void sendAppointmentAcceptedNotificationSafe({ appointment });
 
   return appointment;
 };

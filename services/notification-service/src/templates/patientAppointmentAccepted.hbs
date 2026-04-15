@@ -1,0 +1,28 @@
+<div style="font-family: Arial, Helvetica, sans-serif; color: #111827;">
+  <h2 style="color:#111827;margin-top:0;">Your appointment has been accepted</h2>
+
+  <p>Hi {{#if patientName}}{{patientName}}{{else}}there{{/if}},</p>
+
+  <p>
+    Your appointment with
+    <strong>{{#if doctorName}}{{doctorName}}{{else}}your doctor{{/if}}</strong>
+    for
+    <strong>{{appointmentDateTime}}</strong>
+    has been
+    <strong>accepted</strong>.
+  </p>
+
+  {{#if appointmentNumber}}
+    <p>
+      Your appointment number is
+      <strong>{{appointmentNumber}}</strong>. Please keep this for your records.
+    </p>
+  {{/if}}
+
+  <p>
+    Please arrive a few minutes early and bring any relevant medical documents
+    or test results to your visit.
+  </p>
+
+  <p style="color:#6b7280;margin-top:18px;">Best regards,<br />The Remedy Team</p>
+</div>
