@@ -2,6 +2,8 @@ import mongoose from "mongoose";
 import axios from "axios";
 import Appointment from "../models/appointmentModel.js";
 import { fetchUserByIdInternal } from "../clients/authClient.js";
+import { fetchPatientProfileByUserIdInternal } from "../clients/patientClient.js";
+import { fetchDoctorProfileByUserIdInternal } from "../clients/doctorProfileClient.js";
 import { sendAppointmentConfirmationEmail } from "../clients/notificationClient.js";
 
 const DOCTOR_SERVICE_BASE_URL =
@@ -115,11 +117,40 @@ const formatScheduleTime = (schedule) => {
   return `${day} ${startTime}`;
 };
 
+const normalizeSriLankaPhone = (raw) => {
+  if (!raw) return undefined;
+
+  const trimmed = String(raw).trim();
+  if (!trimmed) return undefined;
+
+  if (trimmed.startsWith("+")) return trimmed;
+
+  const digits = trimmed.replace(/[^0-9]/g, "");
+  if (!digits) return undefined;
+
+  if (digits.startsWith("0")) {
+    return `+94${digits.slice(1)}`;
+  }
+
+  if (digits.startsWith("94")) {
+    return `+${digits}`;
+  }
+
+  // Fallback: treat as already including country code but missing plus
+  return `+${digits}`;
+};
+
 const sendAppointmentAcceptedNotificationSafe = async ({ appointment }) => {
   try {
     if (!appointment) return;
 
-    const [patientUser, doctorUser, scheduleResponse] = await Promise.all([
+    const [
+      patientUser,
+      doctorUser,
+      scheduleResponse,
+      patientProfile,
+      doctorProfile,
+    ] = await Promise.all([
       fetchUserByIdInternal(String(appointment.patientId)),
       fetchUserByIdInternal(String(appointment.doctorId)),
       appointment.scheduleId
@@ -127,6 +158,8 @@ const sendAppointmentAcceptedNotificationSafe = async ({ appointment }) => {
             `${DOCTOR_SERVICE_BASE_URL}/api/doctor-schedules/schedule/${appointment.scheduleId}`,
           )
         : Promise.resolve(null),
+      fetchPatientProfileByUserIdInternal(String(appointment.patientId)),
+      fetchDoctorProfileByUserIdInternal(String(appointment.doctorId)),
     ]);
 
     const schedule = scheduleResponse
@@ -136,9 +169,16 @@ const sendAppointmentAcceptedNotificationSafe = async ({ appointment }) => {
     const appointmentDateTime = formatScheduleTime(schedule);
     const appointmentNumber = appointment.appointmentNumber;
 
+    const patientPhone = normalizeSriLankaPhone(patientProfile?.phone);
+
+    if (!patientPhone) {
+      console.log(`phone number is not available for ${appointment.patientId}`);
+    }
+
     if (patientUser?.email) {
       await sendAppointmentConfirmationEmail({
         to: patientUser.email,
+        phoneTo: patientPhone,
         patientName: patientUser.name,
         doctorName: doctorUser?.name,
         appointmentDateTime,
@@ -158,17 +198,32 @@ const sendAppointmentNotificationsSafe = async ({ appointment, schedule }) => {
   try {
     if (!appointment) return;
 
-    const [patientUser, doctorUser] = await Promise.all([
-      fetchUserByIdInternal(String(appointment.patientId)),
-      fetchUserByIdInternal(String(appointment.doctorId)),
-    ]);
+    const [patientUser, doctorUser, patientProfile, doctorProfile] =
+      await Promise.all([
+        fetchUserByIdInternal(String(appointment.patientId)),
+        fetchUserByIdInternal(String(appointment.doctorId)),
+        fetchPatientProfileByUserIdInternal(String(appointment.patientId)),
+        fetchDoctorProfileByUserIdInternal(String(appointment.doctorId)),
+      ]);
 
     const appointmentDateTime = formatScheduleTime(schedule);
     const appointmentNumber = appointment.appointmentNumber;
 
+    const patientPhone = normalizeSriLankaPhone(patientProfile?.phone);
+    const doctorPhone = normalizeSriLankaPhone(doctorProfile?.contactNo);
+
+    if (!patientPhone) {
+      console.log(`phone number is not available for ${appointment.patientId}`);
+    }
+
+    if (!doctorPhone) {
+      console.log(`phone number is not available for ${appointment.doctorId}`);
+    }
+
     if (patientUser?.email) {
       await sendAppointmentConfirmationEmail({
         to: patientUser.email,
+        phoneTo: patientPhone,
         patientName: patientUser.name,
         doctorName: doctorUser?.name,
         appointmentDateTime,
@@ -180,6 +235,7 @@ const sendAppointmentNotificationsSafe = async ({ appointment, schedule }) => {
     if (doctorUser?.email) {
       await sendAppointmentConfirmationEmail({
         to: doctorUser.email,
+        phoneTo: doctorPhone,
         patientName: patientUser?.name,
         doctorName: doctorUser.name,
         appointmentDateTime,
@@ -189,6 +245,125 @@ const sendAppointmentNotificationsSafe = async ({ appointment, schedule }) => {
     }
   } catch (error) {
     console.error("Failed to send appointment notifications", {
+      appointmentId: appointment?._id,
+      error: error?.message,
+    });
+  }
+};
+
+const sendAppointmentCompletedNotificationsSafe = async ({ appointment }) => {
+  try {
+    if (!appointment) return;
+
+    const [
+      patientUser,
+      doctorUser,
+      scheduleResponse,
+      patientProfile,
+      doctorProfile,
+    ] = await Promise.all([
+      fetchUserByIdInternal(String(appointment.patientId)),
+      fetchUserByIdInternal(String(appointment.doctorId)),
+      appointment.scheduleId
+        ? axios.get(
+            `${DOCTOR_SERVICE_BASE_URL}/api/doctor-schedules/schedule/${appointment.scheduleId}`,
+          )
+        : Promise.resolve(null),
+      fetchPatientProfileByUserIdInternal(String(appointment.patientId)),
+      fetchDoctorProfileByUserIdInternal(String(appointment.doctorId)),
+    ]);
+
+    const schedule = scheduleResponse
+      ? scheduleResponse.data?.schedule || scheduleResponse.data
+      : undefined;
+
+    const appointmentDateTime = formatScheduleTime(schedule);
+    const appointmentNumber = appointment.appointmentNumber;
+
+    const patientPhone = normalizeSriLankaPhone(patientProfile?.phone);
+    const doctorPhone = normalizeSriLankaPhone(doctorProfile?.contactNo);
+
+    if (!patientPhone) {
+      console.log(`phone number is not available for ${appointment.patientId}`);
+    }
+
+    if (!doctorPhone) {
+      console.log(`phone number is not available for ${appointment.doctorId}`);
+    }
+
+    if (patientUser?.email) {
+      await sendAppointmentConfirmationEmail({
+        to: patientUser.email,
+        phoneTo: patientPhone,
+        patientName: patientUser.name,
+        doctorName: doctorUser?.name,
+        appointmentDateTime,
+        recipientType: "patient-completed",
+        appointmentNumber,
+      });
+    }
+
+    if (doctorUser?.email) {
+      await sendAppointmentConfirmationEmail({
+        to: doctorUser.email,
+        phoneTo: doctorPhone,
+        patientName: patientUser?.name,
+        doctorName: doctorUser.name,
+        appointmentDateTime,
+        recipientType: "doctor-completed",
+        appointmentNumber,
+      });
+    }
+  } catch (error) {
+    console.error("Failed to send appointment completed notifications", {
+      appointmentId: appointment?._id,
+      error: error?.message,
+    });
+  }
+};
+
+const sendPaymentSuccessNotificationSafe = async ({ appointment }) => {
+  try {
+    if (!appointment) return;
+
+    const [patientUser, doctorUser, scheduleResponse, doctorProfile] =
+      await Promise.all([
+        fetchUserByIdInternal(String(appointment.patientId)),
+        fetchUserByIdInternal(String(appointment.doctorId)),
+        appointment.scheduleId
+          ? axios.get(
+              `${DOCTOR_SERVICE_BASE_URL}/api/doctor-schedules/schedule/${appointment.scheduleId}`,
+            )
+          : Promise.resolve(null),
+        fetchDoctorProfileByUserIdInternal(String(appointment.doctorId)),
+      ]);
+
+    const schedule = scheduleResponse
+      ? scheduleResponse.data?.schedule || scheduleResponse.data
+      : undefined;
+
+    const appointmentDateTime = formatScheduleTime(schedule);
+    const appointmentNumber = appointment.appointmentNumber;
+
+    const doctorPhone = normalizeSriLankaPhone(doctorProfile?.contactNo);
+
+    if (!doctorPhone) {
+      console.log(`phone number is not available for ${appointment.doctorId}`);
+    }
+
+    if (doctorUser?.email) {
+      await sendAppointmentConfirmationEmail({
+        to: doctorUser.email,
+        phoneTo: doctorPhone,
+        patientName: patientUser?.name,
+        doctorName: doctorUser.name,
+        appointmentDateTime,
+        recipientType: "doctor-payment-success",
+        appointmentNumber,
+      });
+    }
+  } catch (error) {
+    console.error("Failed to send payment success notification", {
       appointmentId: appointment?._id,
       error: error?.message,
     });
@@ -629,6 +804,11 @@ export const updatePaymentStatus = async (id, requester, paymentStatus) => {
   appointment.paymentStatus = paymentStatus;
   await appointment.save();
 
+  if (paymentStatus === "success") {
+    // Fire-and-forget email to doctor about successful payment.
+    void sendPaymentSuccessNotificationSafe({ appointment });
+  }
+
   return attachUserNamesToAppointment(appointment);
 };
 
@@ -673,6 +853,9 @@ export const completeAppointment = async (id, requester) => {
 
   appointment.status = "completed";
   await appointment.save();
+
+  // Fire-and-forget emails to both doctor and patient about completion.
+  void sendAppointmentCompletedNotificationsSafe({ appointment });
 
   return attachUserNamesToAppointment(appointment);
 };
