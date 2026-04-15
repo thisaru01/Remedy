@@ -52,6 +52,8 @@ export default function DoctorAppointmentDetail() {
               appointmentId={appointmentId}
               patientId={appointment?.patientId}
               doctorId={appointment?.doctorId}
+              schedule={schedule}
+              createdAt={appointment?.createdAt}
               onMeetingCreated={() => setActiveTab("meetings")}
             />
           </TabsContent>
@@ -61,9 +63,21 @@ export default function DoctorAppointmentDetail() {
               <div className="mb-3 rounded-lg border px-4 py-3 text-sm">
                 <span className="font-medium capitalize">{schedule.day}</span>
                 <span className="text-muted-foreground"> · {schedule.startTime} – {schedule.endTime}</span>
+                {appointment?.createdAt && (() => {
+                  const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+                  const targetDay = days.indexOf(schedule.day);
+                  if (targetDay === -1) return null;
+                  const start = new Date(appointment.createdAt);
+                  if (isNaN(start.getTime())) return null;
+                  const diff = (targetDay - start.getDay() + 7) % 7;
+                  const result = new Date(start);
+                  result.setDate(start.getDate() + diff);
+                  const dateStr = result.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+                  return <span className="ml-2 text-muted-foreground">· <span className="font-medium text-foreground">{dateStr}</span></span>;
+                })()}
               </div>
             )}
-            <MeetingsTab appointmentId={appointmentId} />
+            <MeetingsTab appointmentId={appointmentId} patientId={appointment?.patientId} />
           </TabsContent>
 
           <TabsContent value="prescriptions" className="mt-4">

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Video } from "lucide-react";
 import { createSession, getSessionByAppointmentId } from "@/api/services/telemedicineService";
 
-export default function CreateMeetingTab({ appointmentId, patientId, doctorId, onMeetingCreated }) {
+export default function CreateMeetingTab({ appointmentId, patientId, doctorId, schedule, createdAt, onMeetingCreated }) {
   const [checking, setChecking] = useState(true);
   const [alreadyExists, setAlreadyExists] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -56,6 +56,22 @@ export default function CreateMeetingTab({ appointmentId, patientId, doctorId, o
         </p>
       ) : (
         <>
+          {schedule && createdAt && (() => {
+            const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+            const targetDay = days.indexOf(schedule.day);
+            if (targetDay === -1) return null;
+            const start = new Date(createdAt);
+            if (isNaN(start.getTime())) return null;
+            const diff = (targetDay - start.getDay() + 7) % 7;
+            const result = new Date(start);
+            result.setDate(start.getDate() + diff);
+            const dateStr = result.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+            return (
+              <p className="text-sm text-muted-foreground">
+                Meeting will be scheduled on <strong>{schedule.day}, {dateStr}</strong> · {schedule.startTime}{schedule.endTime ? ` – ${schedule.endTime}` : ""}
+              </p>
+            );
+          })()}
           <p className="text-sm text-muted-foreground">No meeting has been created for this appointment yet.</p>
           <Button size="sm" className="gap-1.5" disabled={loading} onClick={handleCreate}>
             <Video size={15} />

@@ -22,6 +22,18 @@ function formatDate(dt) {
   }
 }
 
+function getNextScheduledDate(createdAt, dayName) {
+  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const targetDay = days.indexOf(dayName);
+  if (targetDay === -1) return null;
+  const start = new Date(createdAt);
+  if (isNaN(start.getTime())) return null;
+  const diff = (targetDay - start.getDay() + 7) % 7;
+  const result = new Date(start);
+  result.setDate(start.getDate() + diff);
+  return result.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+}
+
 function formatDoctorDisplay(appt) {
   // appointment may include doctor info in several shapes: { doctorId: 'id' } or
   // { doctorId: { _id, name, firstName, lastName } } or { doctorName }
@@ -199,8 +211,18 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
         <div className="flex items-center justify-between gap-4">
           <div>
             {schedule && (
-              <div className="text-sm font-semibold text-primary">
-                {schedule.day} · {schedule.startTime}{schedule.endTime ? ` - ${schedule.endTime}` : ""}
+              <div>
+                <div className="text-sm font-semibold text-primary">
+                  {schedule.day} · {schedule.startTime}{schedule.endTime ? ` - ${schedule.endTime}` : ""}
+                </div>
+                {appt?.paymentStatus === "success" && appt?.createdAt && schedule?.day && (() => {
+                  const scheduledDate = getNextScheduledDate(appt.createdAt, schedule.day);
+                  return scheduledDate ? (
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      <span className="font-medium text-muted-foreground">Scheduled&nbsp;</span>{scheduledDate}
+                    </div>
+                  ) : null;
+                })()}
               </div>
             )}
           </div>
@@ -233,7 +255,9 @@ export default function AppointmentCard({ appt, action = "cancel" }) {
       </CardContent>
       <div className="px-4 pb-4">
         <div className="flex items-center justify-between">
-          <div className="text-xs text-muted-foreground">{formatDate(appt.createdAt)}</div>
+          <div className="text-xs text-muted-foreground">
+            {appt?.paymentStatus === "success" && <span className="font-medium">Booked&nbsp;</span>}{formatDate(appt.createdAt)}
+          </div>
           <div>
             {action === "pay" ? (
               <PaymentButton appointmentId={appt._id} />

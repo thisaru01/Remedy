@@ -1,6 +1,7 @@
 import {
   mintJaasRoomToken,
 } from "../config/jaas.js";
+import { fetchUserName } from "../clients/authClient.js";
 import { createSessionRecord, findSessionByAppointmentId } from "../repositories/sessionRepository.js";
 import {
   getAccessibleSessionByAppointmentIdOrError,
@@ -112,11 +113,14 @@ export const createSession = async (req, res, next) => {
 
     const { roomName, joinUrl } = controllerDeps.generateSecureRoomUrl();
 
+    const patientName = (await fetchUserName(patientId)) || "";
+
     const session = await controllerDeps.createSessionRecord({
       appointmentId,
       patientId,
       doctorId,
       doctorName: req.user.name || "",
+      patientName,
       roomName,
       joinUrl,
       status: "scheduled",
@@ -158,7 +162,17 @@ export const getSessionByAppointmentId = async (req, res, next) => {
       return sendServiceError(res, result);
     }
 
-    return sendData(res, 200, result.session);
+    const session = result.session;
+
+    // Backfill patientName for sessions created before the authClient was introduced
+    if (!session.patientName && session.patientId) {
+      const name = await fetchUserName(String(session.patientId));
+      if (name) {
+        session.patientName = name;
+      }
+    }
+
+    return sendData(res, 200, session);
   } catch (error) {
     return next(error);
   }

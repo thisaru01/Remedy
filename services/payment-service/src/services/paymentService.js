@@ -1,7 +1,7 @@
 import Payment from "../models/paymentModel.js";
 import {
   fetchAppointmentByIdForUser,
-  updateAppointmentPaymentStatus,
+  emitAppointmentEvent,
 } from "../clients/appointmentClient.js";
 import { createCheckoutSession, retrieveCheckoutSession } from "../clients/stripeClient.js";
 
@@ -37,7 +37,7 @@ const syncPaymentStatus = async (
   }
 
   await payment.save();
-  await updateAppointmentPaymentStatus(payment.appointmentId, paymentStatus);
+  await emitAppointmentEvent("PAYMENT_" + paymentStatus.toUpperCase(), payment.appointmentId);
 
   return payment;
 };
@@ -135,7 +135,7 @@ export const createPayment = async ({ appointmentId, currency }, requester) => {
   payment.failureReason = "";
 
   await payment.save();
-  await updateAppointmentPaymentStatus(appointmentId, "pending");
+  await emitAppointmentEvent("PAYMENT_PENDING", appointmentId);
 
   return payment;
 };
