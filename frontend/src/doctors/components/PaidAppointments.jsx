@@ -12,6 +12,12 @@ function formatDate(dt) {
   }
 }
 
+function getPatientName(appt) {
+  return (
+    appt?.patientName || appt?.patient?.name || appt?.user?.name || String(appt?.patientId || "-")
+  );
+}
+
 function AppointmentCard({ appt }) {
   return (
     <Card>
@@ -28,8 +34,8 @@ function AppointmentCard({ appt }) {
       <CardContent>
         <div className="grid grid-cols-1 gap-2">
           <div>
-            <div className="text-xs text-muted-foreground">Patient ID</div>
-            <div className="text-sm">{String(appt.patientId)}</div>
+            <div className="text-xs text-muted-foreground">Patient Name</div>
+            <div className="text-sm">{getPatientName(appt)}</div>
           </div>
           <div>
             <div className="text-xs text-muted-foreground">Fee</div>

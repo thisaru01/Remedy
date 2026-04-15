@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { CheckCircle2, Clock3, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
@@ -17,6 +16,15 @@ function formatDate(dt) {
   } catch (error) {
     return dt;
   }
+}
+
+function getPatientName(appointment) {
+  return (
+    appointment?.patientName ||
+    appointment?.patient?.name ||
+    appointment?.user?.name ||
+    String(appointment?.patientId || "-")
+  );
 }
 
 function AppointmentCard({ appointment, onAccept, onReject }) {
@@ -38,8 +46,8 @@ function AppointmentCard({ appointment, onAccept, onReject }) {
       <CardContent>
         <div className="grid grid-cols-1 gap-2">
           <div>
-            <div className="text-xs text-muted-foreground">Patient ID</div>
-            <div className="text-sm">{String(appointment.patientId)}</div>
+            <div className="text-xs text-muted-foreground">Patient Name</div>
+            <div className="text-sm">{getPatientName(appointment)}</div>
           </div>
           <div>
             <div className="text-xs text-muted-foreground">Fee</div>
@@ -80,12 +88,6 @@ function AppointmentCard({ appointment, onAccept, onReject }) {
         >
           <XCircle className="h-4 w-4" />
           Reject
-        </Button>
-
-        <Button asChild type="button" variant="outline" className="ml-auto">
-          <Link to={`/doctor/appointments/detail/${appointment._id}`}>
-            View Details
-          </Link>
         </Button>
       </div>
     </Card>
