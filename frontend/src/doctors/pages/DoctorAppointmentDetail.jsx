@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { getAppointment } from "@/api/services/appointmentService";
+import { getAppointment, completeAppointment } from "@/api/services/appointmentService";
+import { getDoctorPrescriptionByAppointmentId } from "@/api/services/doctorPrescriptionService";
 import { getScheduleById } from "@/api/services/doctorService";
+import { Button } from "@/components/ui/button";
 import CreateMeetingTab from "@/doctors/components/CreateMeetingTab";
 import MeetingsTab from "@/doctors/components/MeetingsTab";
 import PrescriptionsTab from "@/doctors/components/PrescriptionsTab";
 import ReportsTab from "@/doctors/components/ReportsTab";
+import { toast } from "sonner";
 
 export default function DoctorAppointmentDetail() {
   const { id: appointmentId } = useParams();
@@ -15,6 +18,8 @@ export default function DoctorAppointmentDetail() {
   const [apptError, setApptError] = useState(null);
   const [schedule, setSchedule] = useState(null);
   const [activeTab, setActiveTab] = useState("create-meeting");
+  const [hasPrescription, setHasPrescription] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
 
   useEffect(() => {
     getAppointment(appointmentId)
@@ -30,6 +35,67 @@ export default function DoctorAppointmentDetail() {
       .catch((err) => setApptError(err?.response?.data?.message || err?.message || "Failed to load appointment"))
       .finally(() => setLoadingAppt(false));
   }, [appointmentId]);
+
+  useEffect(() => {
+    if (!appointmentId) return;
+
+    getDoctorPrescriptionByAppointmentId(appointmentId)
+      .then((res) => {
+        const prescription = res?.data?.prescription ?? res?.data ?? null;
+        setHasPrescription(Boolean(prescription));
+      })
+      .catch((err) => {
+        const status = err?.response?.status;
+        const message = String(err?.response?.data?.message || err?.message || "").toLowerCase();
+        const missingPrescription =
+          status === 404 ||
+          message.includes("not found") ||
+          message.includes("no prescription");
+
+        if (missingPrescription) {
+          setHasPrescription(false);
+          return;
+        }
+
+        setHasPrescription(false);
+      });
+  }, [appointmentId]);
+
+  const handleCompleteAppointment = async () => {
+    if (!appointmentId) return;
+
+    try {
+      setIsCompleting(true);
+      const response = await completeAppointment(appointmentId);
+      const updatedAppointment = response?.data?.appointment ?? response?.data ?? null;
+      if (updatedAppointment) {
+        setAppointment(updatedAppointment);
+      }
+      toast.success("Appointment marked as completed.");
+    } catch (err) {
+      const msg = err?.response?.data?.message || err?.message || "Failed to complete appointment";
+      toast.error(msg);
+    } finally {
+      setIsCompleting(false);
+    }
+  };
+
+  const isAlreadyCompleted = appointment?.status === "completed";
+  const canCompleteAppointment =
+    appointment?.status === "accepted" &&
+    appointment?.paymentStatus === "success" &&
+    hasPrescription &&
+    !isCompleting;
+
+  const completionHint = isAlreadyCompleted
+    ? "This appointment is already completed."
+    : appointment?.status !== "accepted"
+      ? "Only accepted appointments can be completed."
+      : appointment?.paymentStatus !== "success"
+        ? "Payment must be successful before completing the appointment."
+        : !hasPrescription
+          ? "Submit the prescription first, then complete the appointment from Reports."
+          : "After reviewing patient reports, click Complete Appointment.";
 
   if (loadingAppt) return <div className="pt-4 text-sm text-muted-foreground">Loading appointment...</div>;
   if (apptError) return <div className="pt-4 text-sm text-destructive">Error: {apptError}</div>;
@@ -89,6 +155,21 @@ export default function DoctorAppointmentDetail() {
 
           <TabsContent value="reports" className="mt-4">
             <ReportsTab appointmentId={appointmentId} />
+            <div className="mt-4 rounded-lg border bg-card p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-medium">Complete this appointment</p>
+                  <p className="text-xs text-muted-foreground">{completionHint}</p>
+                </div>
+                <Button
+                  type="button"
+                  onClick={handleCompleteAppointment}
+                  disabled={!canCompleteAppointment || isAlreadyCompleted}
+                >
+                  {isCompleting ? "Completing..." : isAlreadyCompleted ? "Completed" : "Complete Appointment"}
+                </Button>
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
