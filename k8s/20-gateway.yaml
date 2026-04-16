@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+  namespace: remedy
+  labels:
+    app: gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gateway
+  template:
+    metadata:
+      labels:
+        app: gateway
+    spec:
+      containers:
+        - name: gateway
+          image: remedy-gateway:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+            - name: AUTH_SERVICE_URL
+              value: "http://auth-service:5000"
+            - name: PATIENT_SERVICE_URL
+              value: "http://patient-service:5000"
+            - name: DOCTOR_SERVICE_URL
+              value: "http://doctor-service:5000"
+            - name: APPOINTMENT_SERVICE_URL
+              value: "http://appointment-service:5000"
+            - name: PAYMENT_SERVICE_URL
+              value: "http://payment-service:5000"
+            - name: TELEMEDICINE_SERVICE_URL
+              value: "http://telemedicine-service:5000"
+            - name: AI_SERVICE_URL
+              value: "http://ai-service:5000"
+          envFrom:
+            - secretRef:
+                name: remedy-env
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway
+  namespace: remedy
+spec:
+  type: NodePort
+  selector:
+    app: gateway
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      nodePort: 30080

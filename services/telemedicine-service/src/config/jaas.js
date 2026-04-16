@@ -30,8 +30,8 @@ const normalizePrivateKey = (rawValue) => {
 };
 
 const hasAnyJaasCredential = () => {
-  return ["JAAS_APP_ID", "JAAS_KEY_ID", "JAAS_PRIVATE_KEY"].some(
-    (envName) => Boolean((process.env[envName] || "").trim()),
+  return ["JAAS_APP_ID", "JAAS_KEY_ID", "JAAS_PRIVATE_KEY"].some((envName) =>
+    Boolean((process.env[envName] || "").trim()),
   );
 };
 
@@ -70,10 +70,15 @@ export const validateJaasConfig = () => {
   if (!domain) missing.push("JAAS_DOMAIN");
 
   if (missing.length > 0) {
-    throw new Error(`Missing required JaaS configuration: ${missing.join(", ")}`);
+    throw new Error(
+      `Missing required JaaS configuration: ${missing.join(", ")}`,
+    );
   }
 
-  if (!privateKey.includes("BEGIN PRIVATE KEY") || !privateKey.includes("END PRIVATE KEY")) {
+  if (
+    !privateKey.includes("BEGIN PRIVATE KEY") ||
+    !privateKey.includes("END PRIVATE KEY")
+  ) {
     throw new Error("JAAS_PRIVATE_KEY is not a valid PEM private key");
   }
 };
@@ -85,7 +90,9 @@ export const buildJaasJoinUrl = (roomName) => {
 
 export const mintJaasRoomToken = ({ roomName, user }) => {
   const { appId, keyId, privateKey } = getJaasConfig();
-  const expiresIn = (process.env.JAAS_TOKEN_EXPIRES_IN || DEFAULT_JAAS_TOKEN_EXPIRES_IN).trim();
+  const expiresIn = (
+    process.env.JAAS_TOKEN_EXPIRES_IN || DEFAULT_JAAS_TOKEN_EXPIRES_IN
+  ).trim();
 
   const moderator = String(user.role).toLowerCase() === "doctor";
 
@@ -99,6 +106,12 @@ export const mintJaasRoomToken = ({ roomName, user }) => {
         id: String(user.id),
         name: String(user.name || user.id),
         moderator,
+      },
+      features: {
+        livestreaming: "false",
+        "outbound-call": "false",
+        transcription: "false",
+        recording: "false",
       },
     },
   };
