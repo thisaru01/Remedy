@@ -36,6 +36,7 @@ import {
 const defaultItems = [
   { title: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { title: "Profile", href: "/admin/profile", icon: CircleUser },
+  { title: "Transactions", href: "/admin/transactions", icon: FileText },
   {
     title: "Users",
     href: "/admin/users",
