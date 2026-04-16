@@ -41,6 +41,7 @@ const defaultItems = [
     href: "/admin/users",
     icon: Users,
     children: [
+      { title: "Accounts", href: "/admin/users/accounts" },
       { title: "Doctors", href: "/admin/users/doctors" },
       { title: "Patients", href: "/admin/users/patients" },
     ],
