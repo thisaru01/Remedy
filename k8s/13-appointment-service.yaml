@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: appointment-service
+  namespace: remedy
+  labels:
+    app: appointment-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: appointment-service
+  template:
+    metadata:
+      labels:
+        app: appointment-service
+    spec:
+      containers:
+        - name: appointment-service
+          image: remedy-appointment-service:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000
+          env:
+            - name: PORT
+              value: "5000"
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: remedy-env
+                  key: APPOINTMENT_MONGO_URI
+            - name: DOCTOR_SERVICE_URL
+              value: "http://doctor-service:5000"
+            - name: AUTH_SERVICE_URL
+              value: "http://auth-service:5000"
+            - name: NOTIFICATION_SERVICE_URL
+              value: "http://notification-service:5007"
+            - name: NOTIFICATION_SERVICE_TIMEOUT_MS
+              value: "10000"
+          envFrom:
+            - secretRef:
+                name: remedy-env
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: appointment-service
+  namespace: remedy
+spec:
+  type: ClusterIP
+  selector:
+    app: appointment-service
+  ports:
+    - name: http
+      port: 5000
+      targetPort: 5000
