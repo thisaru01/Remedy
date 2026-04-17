@@ -1,7 +1,8 @@
 import {
   mintJaasRoomToken,
 } from "../config/jaas.js";
-import { createSessionRecord } from "../repositories/sessionRepository.js";
+import { fetchUserName } from "../clients/authClient.js";
+import { createSessionRecord, findSessionByAppointmentId } from "../repositories/sessionRepository.js";
 import {
   getAccessibleSessionByAppointmentIdOrError,
   getAccessibleSessionByIdOrError,
@@ -23,6 +24,7 @@ import {
 const defaultDeps = {
   mintJaasRoomToken,
   createSessionRecord,
+  findSessionByAppointmentId,
   getAccessibleSessionByAppointmentIdOrError,
   getAccessibleSessionByIdOrError,
   getPaginatedSessions,
@@ -76,9 +78,9 @@ const sendServiceError = (res, result) => {
  */
 export const createSession = async (req, res, next) => {
   try {
-    const { appointmentId, patientId, doctorId, scheduledAt } = req.body;
+    const { appointmentId, patientId, doctorId } = req.body;
 
-    const createValidation = controllerDeps.validateCreateSessionPayload({ appointmentId, patientId, doctorId, scheduledAt });
+    const createValidation = controllerDeps.validateCreateSessionPayload({ appointmentId, patientId, doctorId });
     if (createValidation.error) {
       return sendServiceError(res, createValidation);
     }
@@ -90,27 +92,37 @@ export const createSession = async (req, res, next) => {
 
     let isValidAppointment;
     try {
-      isValidAppointment = await controllerDeps.validateWithAppointmentService(appointmentId);
+      isValidAppointment = await controllerDeps.validateWithAppointmentService(appointmentId, {
+        userId: req.user?.id,
+        userRole: req.user?.role,
+      });
     } catch (error) {
       // Appointment service is down right now
       return sendError(res, 503, "Appointment service is unavailable. Please try again later.");
     }
 
     if (!isValidAppointment) {
-      // Appointment exists but doesn't match the required type/status
-      return sendError(res, 400, "Appointment is invalid: must be an ONLINE appointment with PAID status.");
+      return sendError(res, 400, "Appointment is invalid: payment has not been completed.");
+    }
+
+    // Find-or-create: return existing session if one already exists for this appointment
+    const existingSession = await controllerDeps.findSessionByAppointmentId(appointmentId);
+    if (existingSession) {
+      return sendData(res, 200, existingSession, { message: "Session already exists" });
     }
 
     const { roomName, joinUrl } = controllerDeps.generateSecureRoomUrl();
+
+    const patientName = (await fetchUserName(patientId)) || "";
 
     const session = await controllerDeps.createSessionRecord({
       appointmentId,
       patientId,
       doctorId,
       doctorName: req.user.name || "",
+      patientName,
       roomName,
       joinUrl,
-      scheduledAt,
       status: "scheduled",
     });
 
@@ -150,7 +162,17 @@ export const getSessionByAppointmentId = async (req, res, next) => {
       return sendServiceError(res, result);
     }
 
-    return sendData(res, 200, result.session);
+    const session = result.session;
+
+    // Backfill patientName for sessions created before the authClient was introduced
+    if (!session.patientName && session.patientId) {
+      const name = await fetchUserName(String(session.patientId));
+      if (name) {
+        session.patientName = name;
+      }
+    }
+
+    return sendData(res, 200, session);
   } catch (error) {
     return next(error);
   }

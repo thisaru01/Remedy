@@ -84,6 +84,28 @@ export const uploadPatientReportService = async ({ user, file, body }) => {
           },
         };
       }
+
+      if (appointment.status !== "accepted") {
+        return {
+          status: 400,
+          body: {
+            success: false,
+            message:
+              "You can only attach reports to appointments that are accepted",
+          },
+        };
+      }
+
+      if (appointment.paymentStatus !== "success") {
+        return {
+          status: 400,
+          body: {
+            success: false,
+            message:
+              "You can only attach reports to appointments with successful payment",
+          },
+        };
+      }
     } catch (error) {
       const status = error?.response?.status || 502;
       const message =
@@ -454,6 +476,28 @@ export const updatePatientReportService = async ({ user, params, body }) => {
             body: {
               success: false,
               message: "You can only attach reports to your own appointments",
+            },
+          };
+        }
+
+        if (appointment.status !== "accepted") {
+          return {
+            status: 400,
+            body: {
+              success: false,
+              message:
+                "You can only attach reports to appointments that are accepted",
+            },
+          };
+        }
+
+        if (appointment.paymentStatus !== "success") {
+          return {
+            status: 400,
+            body: {
+              success: false,
+              message:
+                "You can only attach reports to appointments with successful payment",
             },
           };
         }

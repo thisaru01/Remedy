@@ -1,24 +1,38 @@
 import { useParams } from "react-router-dom";
+import { DoctorManagement } from "../components/DoctorManagement";
+import { PatientManagement } from "../components/PatientManagement";
+import { UserAccountManagement } from "../components/UserAccountManagement";
 
-const allowedTypes = new Set(["doctor", "patient"]);
+const allowedTypes = new Set(["accounts", "doctors", "patients"]);
 
 export default function AdminUsers() {
   const { type } = useParams();
-  const normalizedType = (type ?? "doctor").toLowerCase();
+  const normalizedType = (type ?? "doctors").toLowerCase();
 
-  const safeType = allowedTypes.has(normalizedType) ? normalizedType : "doctor";
+  const safeType = allowedTypes.has(normalizedType)
+    ? normalizedType
+    : "doctors";
 
-  const label =
-    safeType === "doctor"
-      ? "Doctor"
-      : safeType === "patient"
-        ? "Patient"
-        : "Doctor";
+  if (safeType === "accounts") {
+    return <UserAccountManagement />;
+  }
+
+  if (safeType === "doctors") {
+    return <DoctorManagement />;
+  }
+
+  if (safeType === "patients") {
+    return <PatientManagement />;
+  }
+
+  const label = "Doctor";
 
   return (
-    <div>
+    <div className="space-y-4">
       <h1 className="text-2xl font-semibold">Users</h1>
-      <p className="mt-2 text-sm text-muted-foreground">Type: {label}</p>
+      <p className="text-sm text-muted-foreground">
+        Managing {label} accounts.
+      </p>
     </div>
   );
 }

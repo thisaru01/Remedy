@@ -84,6 +84,13 @@ export const submitOwnDoctorVerification = async (req, res, next) => {
       profile,
     });
   } catch (error) {
+    if (error?.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "This medical license number is already in use by another doctor",
+      });
+    }
+
     if (sendServiceError(res, error)) return;
     return next(error);
   }
@@ -116,6 +123,22 @@ export const getApprovedDoctorProfilesBySpecialty = async (req, res, next) => {
       specialty,
       count: profiles.length,
       profiles,
+    });
+  } catch (error) {
+    if (sendServiceError(res, error)) return;
+    return next(error);
+  }
+};
+
+export const getDoctorFullDetails = async (req, res, next) => {
+  try {
+    const profile = await doctorProfileService.getDoctorFullDetails({
+      doctorUserId: req.params.id,
+    });
+
+    return res.status(200).json({
+      success: true,
+      profile,
     });
   } catch (error) {
     if (sendServiceError(res, error)) return;

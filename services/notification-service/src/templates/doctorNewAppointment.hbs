@@ -1,0 +1,26 @@
+<div style="font-family: Arial, Helvetica, sans-serif; color: #111827;">
+  <h2 style="color:#111827;margin-top:0;">New appointment request received</h2>
+
+  <p>Hi {{#if doctorName}}{{doctorName}}{{else}}Doctor{{/if}},</p>
+
+  <p>
+    You have received a new appointment request from
+    <strong>{{#if patientName}}{{patientName}}{{else}}a patient{{/if}}</strong>
+    for
+    <strong>{{appointmentDateTime}}</strong>.
+  </p>
+
+  {{#if appointmentNumber}}
+    <p>
+      Appointment number:
+      <strong>{{appointmentNumber}}</strong>.
+    </p>
+  {{/if}}
+
+  <p>
+    Please review this appointment in the Remedy portal and take action (accept
+    or reject) as soon as possible.
+  </p>
+
+  <p style="color:#6b7280;margin-top:18px;">Best regards,<br />The Remedy Team</p>
+</div>

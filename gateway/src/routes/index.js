@@ -5,7 +5,9 @@ import { createAuthRoutes } from "./authRoutes.js";
 import { createPatientRoutes } from "./patientRoutes.js";
 import { createDoctorRoutes } from "./doctorRoutes.js";
 import { createAppointmentRoutes } from "./appointmentRoutes.js";
+import { createPaymentRoutes } from "./paymentRoutes.js";
 import { createTelemedicineRoutes } from "./telemedicineRoutes.js";
+import { createAiRoutes } from "./aiRoutes.js";
 
 export const createGatewayRoutes = ({ protect, proxyTo, services }) => {
   const router = express.Router();
@@ -15,7 +17,9 @@ export const createGatewayRoutes = ({ protect, proxyTo, services }) => {
   router.use(createPatientRoutes({ protect, proxyTo, services }));
   router.use(createDoctorRoutes({ protect, proxyTo, services }));
   router.use(createAppointmentRoutes({ protect, proxyTo, services }));
+  router.use(createPaymentRoutes({ protect, proxyTo, services }));
   router.use(createTelemedicineRoutes({ protect, proxyTo, services }));
+  router.use(createAiRoutes({ protect, proxyTo, services }));
 
   return router;
 };

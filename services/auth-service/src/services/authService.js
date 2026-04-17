@@ -215,6 +215,29 @@ export const loginUser = async ({ email, password }) => {
   };
 };
 
+// Get profile for the currently authenticated user
+export const getMyProfileService = async ({ userId }) => {
+  const user = await User.findById(userId);
+
+  if (!user) {
+    return {
+      status: 404,
+      body: {
+        success: false,
+        message: "User not found",
+      },
+    };
+  }
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+      user: buildUserResponse(user),
+    },
+  };
+};
+
 // Change password for the authenticated user
 export const changeMyPasswordService = async ({
   userId,
@@ -255,6 +278,66 @@ export const changeMyPasswordService = async ({
       success: true,
       message: "Password updated successfully",
       token,
+    },
+  };
+};
+
+// Update basic profile fields (name, email) for the authenticated user
+export const updateMyProfileService = async ({ userId, name, email }) => {
+  const user = await User.findById(userId);
+
+  if (!user) {
+    return {
+      status: 404,
+      body: {
+        success: false,
+        message: "User not found",
+      },
+    };
+  }
+
+  const updates = {};
+
+  if (name !== undefined && name !== user.name) {
+    updates.name = name.trim();
+  }
+
+  if (email !== undefined && email !== user.email) {
+    const existing = await User.findOne({ email, _id: { $ne: user._id } });
+    if (existing) {
+      return {
+        status: 400,
+        body: {
+          success: false,
+          message: "Email is already in use by another account",
+        },
+      };
+    }
+    updates.email = email.trim();
+  }
+
+  if (!Object.keys(updates).length) {
+    return {
+      status: 400,
+      body: {
+        success: false,
+        message: "No changes detected in profile fields",
+      },
+    };
+  }
+
+  Object.assign(user, updates);
+  await user.save();
+
+  const token = generateToken(user);
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+      message: "Profile updated successfully",
+      token,
+      user: buildUserResponse(user),
     },
   };
 };

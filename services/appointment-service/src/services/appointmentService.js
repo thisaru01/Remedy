@@ -1,6 +1,10 @@
 import mongoose from "mongoose";
 import axios from "axios";
 import Appointment from "../models/appointmentModel.js";
+import { fetchUserByIdInternal } from "../clients/authClient.js";
+import { fetchPatientProfileByUserIdInternal } from "../clients/patientClient.js";
+import { fetchDoctorProfileByUserIdInternal } from "../clients/doctorProfileClient.js";
+import { sendAppointmentConfirmationEmail } from "../clients/notificationClient.js";
 
 const DOCTOR_SERVICE_BASE_URL =
   process.env.DOCTOR_SERVICE_URL || "http://doctor-service:5000";
@@ -103,15 +107,304 @@ const generateAppointmentNumber = async (scheduleId) => {
   return `APPT_${numberPart}_${datePart}`;
 };
 
+const formatScheduleTime = (schedule) => {
+  if (!schedule) return undefined;
+  const { day, startTime, endTime } = schedule;
+  if (!day || !startTime) return undefined;
+  if (endTime) {
+    return `${day} ${startTime} - ${endTime}`;
+  }
+  return `${day} ${startTime}`;
+};
+
+const normalizeSriLankaPhone = (raw) => {
+  if (!raw) return undefined;
+
+  const trimmed = String(raw).trim();
+  if (!trimmed) return undefined;
+
+  if (trimmed.startsWith("+")) return trimmed;
+
+  const digits = trimmed.replace(/[^0-9]/g, "");
+  if (!digits) return undefined;
+
+  if (digits.startsWith("0")) {
+    return `+94${digits.slice(1)}`;
+  }
+
+  if (digits.startsWith("94")) {
+    return `+${digits}`;
+  }
+
+  // Fallback: treat as already including country code but missing plus
+  return `+${digits}`;
+};
+
+const sendAppointmentAcceptedNotificationSafe = async ({ appointment }) => {
+  try {
+    if (!appointment) return;
+
+    const [
+      patientUser,
+      doctorUser,
+      scheduleResponse,
+      patientProfile,
+      doctorProfile,
+    ] = await Promise.all([
+      fetchUserByIdInternal(String(appointment.patientId)),
+      fetchUserByIdInternal(String(appointment.doctorId)),
+      appointment.scheduleId
+        ? axios.get(
+            `${DOCTOR_SERVICE_BASE_URL}/api/doctor-schedules/schedule/${appointment.scheduleId}`,
+          )
+        : Promise.resolve(null),
+      fetchPatientProfileByUserIdInternal(String(appointment.patientId)),
+      fetchDoctorProfileByUserIdInternal(String(appointment.doctorId)),
+    ]);
+
+    const schedule = scheduleResponse
+      ? scheduleResponse.data?.schedule || scheduleResponse.data
+      : undefined;
+
+    const appointmentDateTime = formatScheduleTime(schedule);
+    const appointmentNumber = appointment.appointmentNumber;
+
+    const patientPhone = normalizeSriLankaPhone(patientProfile?.phone);
+
+    if (!patientPhone) {
+      console.log(`phone number is not available for ${appointment.patientId}`);
+    }
+
+    if (patientUser?.email) {
+      await sendAppointmentConfirmationEmail({
+        to: patientUser.email,
+        phoneTo: patientPhone,
+        patientName: patientUser.name,
+        doctorName: doctorUser?.name,
+        appointmentDateTime,
+        recipientType: "patient-accepted",
+        appointmentNumber,
+      });
+    }
+  } catch (error) {
+    console.error("Failed to send appointment accepted notification", {
+      appointmentId: appointment?._id,
+      error: error?.message,
+    });
+  }
+};
+
+const sendAppointmentNotificationsSafe = async ({ appointment, schedule }) => {
+  try {
+    if (!appointment) return;
+
+    const [patientUser, doctorUser, patientProfile, doctorProfile] =
+      await Promise.all([
+        fetchUserByIdInternal(String(appointment.patientId)),
+        fetchUserByIdInternal(String(appointment.doctorId)),
+        fetchPatientProfileByUserIdInternal(String(appointment.patientId)),
+        fetchDoctorProfileByUserIdInternal(String(appointment.doctorId)),
+      ]);
+
+    const appointmentDateTime = formatScheduleTime(schedule);
+    const appointmentNumber = appointment.appointmentNumber;
+
+    const patientPhone = normalizeSriLankaPhone(patientProfile?.phone);
+    const doctorPhone = normalizeSriLankaPhone(doctorProfile?.contactNo);
+
+    if (!patientPhone) {
+      console.log(`phone number is not available for ${appointment.patientId}`);
+    }
+
+    if (!doctorPhone) {
+      console.log(`phone number is not available for ${appointment.doctorId}`);
+    }
+
+    if (patientUser?.email) {
+      await sendAppointmentConfirmationEmail({
+        to: patientUser.email,
+        phoneTo: patientPhone,
+        patientName: patientUser.name,
+        doctorName: doctorUser?.name,
+        appointmentDateTime,
+        recipientType: "patient",
+        appointmentNumber,
+      });
+    }
+
+    if (doctorUser?.email) {
+      await sendAppointmentConfirmationEmail({
+        to: doctorUser.email,
+        phoneTo: doctorPhone,
+        patientName: patientUser?.name,
+        doctorName: doctorUser.name,
+        appointmentDateTime,
+        recipientType: "doctor",
+        appointmentNumber,
+      });
+    }
+  } catch (error) {
+    console.error("Failed to send appointment notifications", {
+      appointmentId: appointment?._id,
+      error: error?.message,
+    });
+  }
+};
+
+const sendAppointmentCompletedNotificationsSafe = async ({ appointment }) => {
+  try {
+    if (!appointment) return;
+
+    const [
+      patientUser,
+      doctorUser,
+      scheduleResponse,
+      patientProfile,
+      doctorProfile,
+    ] = await Promise.all([
+      fetchUserByIdInternal(String(appointment.patientId)),
+      fetchUserByIdInternal(String(appointment.doctorId)),
+      appointment.scheduleId
+        ? axios.get(
+            `${DOCTOR_SERVICE_BASE_URL}/api/doctor-schedules/schedule/${appointment.scheduleId}`,
+          )
+        : Promise.resolve(null),
+      fetchPatientProfileByUserIdInternal(String(appointment.patientId)),
+      fetchDoctorProfileByUserIdInternal(String(appointment.doctorId)),
+    ]);
+
+    const schedule = scheduleResponse
+      ? scheduleResponse.data?.schedule || scheduleResponse.data
+      : undefined;
+
+    const appointmentDateTime = formatScheduleTime(schedule);
+    const appointmentNumber = appointment.appointmentNumber;
+
+    const patientPhone = normalizeSriLankaPhone(patientProfile?.phone);
+    const doctorPhone = normalizeSriLankaPhone(doctorProfile?.contactNo);
+
+    if (!patientPhone) {
+      console.log(`phone number is not available for ${appointment.patientId}`);
+    }
+
+    if (!doctorPhone) {
+      console.log(`phone number is not available for ${appointment.doctorId}`);
+    }
+
+    if (patientUser?.email) {
+      await sendAppointmentConfirmationEmail({
+        to: patientUser.email,
+        phoneTo: patientPhone,
+        patientName: patientUser.name,
+        doctorName: doctorUser?.name,
+        appointmentDateTime,
+        recipientType: "patient-completed",
+        appointmentNumber,
+      });
+    }
+
+    if (doctorUser?.email) {
+      await sendAppointmentConfirmationEmail({
+        to: doctorUser.email,
+        phoneTo: doctorPhone,
+        patientName: patientUser?.name,
+        doctorName: doctorUser.name,
+        appointmentDateTime,
+        recipientType: "doctor-completed",
+        appointmentNumber,
+      });
+    }
+  } catch (error) {
+    console.error("Failed to send appointment completed notifications", {
+      appointmentId: appointment?._id,
+      error: error?.message,
+    });
+  }
+};
+
+const sendPaymentSuccessNotificationSafe = async ({ appointment }) => {
+  try {
+    if (!appointment) return;
+
+    const [patientUser, doctorUser, scheduleResponse, doctorProfile] =
+      await Promise.all([
+        fetchUserByIdInternal(String(appointment.patientId)),
+        fetchUserByIdInternal(String(appointment.doctorId)),
+        appointment.scheduleId
+          ? axios.get(
+              `${DOCTOR_SERVICE_BASE_URL}/api/doctor-schedules/schedule/${appointment.scheduleId}`,
+            )
+          : Promise.resolve(null),
+        fetchDoctorProfileByUserIdInternal(String(appointment.doctorId)),
+      ]);
+
+    const schedule = scheduleResponse
+      ? scheduleResponse.data?.schedule || scheduleResponse.data
+      : undefined;
+
+    const appointmentDateTime = formatScheduleTime(schedule);
+    const appointmentNumber = appointment.appointmentNumber;
+
+    const doctorPhone = normalizeSriLankaPhone(doctorProfile?.contactNo);
+
+    if (!doctorPhone) {
+      console.log(`phone number is not available for ${appointment.doctorId}`);
+    }
+
+    if (doctorUser?.email) {
+      await sendAppointmentConfirmationEmail({
+        to: doctorUser.email,
+        phoneTo: doctorPhone,
+        patientName: patientUser?.name,
+        doctorName: doctorUser.name,
+        appointmentDateTime,
+        recipientType: "doctor-payment-success",
+        appointmentNumber,
+      });
+    }
+  } catch (error) {
+    console.error("Failed to send payment success notification", {
+      appointmentId: appointment?._id,
+      error: error?.message,
+    });
+  }
+};
+
+const attachUserNamesToAppointment = async (appointmentDoc) => {
+  if (!appointmentDoc) return null;
+
+  const appointment = appointmentDoc.toObject
+    ? appointmentDoc.toObject()
+    : appointmentDoc;
+
+  try {
+    const [patientUser, doctorUser] = await Promise.all([
+      fetchUserByIdInternal(String(appointment.patientId)),
+      fetchUserByIdInternal(String(appointment.doctorId)),
+    ]);
+
+    if (patientUser) {
+      appointment.patientName = patientUser.name;
+      appointment.patientPhoto = patientUser.profilePhoto;
+    }
+
+    if (doctorUser) {
+      appointment.doctorName = doctorUser.name;
+      appointment.doctorPhoto = doctorUser.profilePhoto;
+    }
+  } catch (error) {
+    console.error("Failed to attach appointment user info", {
+      appointmentId: appointment?._id,
+      error: error?.message,
+    });
+  }
+
+  return appointment;
+};
+
 export const createAppointment = async (data) => {
-  const {
-    patientId,
-    doctorId,
-    scheduleId,
-    status,
-    paymentStatus,
-    reportIds,
-  } = data;
+  const { patientId, doctorId, scheduleId, status, paymentStatus, reportIds } =
+    data;
 
   // Basic required validations
   if (!patientId) {
@@ -149,11 +442,20 @@ export const createAppointment = async (data) => {
     (schedule.slotCount ?? 0) - 1,
   );
 
+  // Fire-and-forget notifications; do not block appointment creation on email failures
+  // or notification latency (e.g., Gmail) from impacting API response time.
+  void sendAppointmentNotificationsSafe({ appointment, schedule });
+
   return appointment;
 };
 
 export const getAppointments = async (filter = {}) => {
-  return Appointment.find(filter).sort({ createdAt: -1 });
+  const appointments = await Appointment.find(filter).sort({ createdAt: -1 });
+  return Promise.all(
+    appointments.map((appointment) =>
+      attachUserNamesToAppointment(appointment),
+    ),
+  );
 };
 
 export const getAppointmentById = async (id, requester) => {
@@ -184,7 +486,7 @@ export const getAppointmentById = async (id, requester) => {
     throw err;
   }
 
-  return appointment;
+  return attachUserNamesToAppointment(appointment);
 };
 
 export const acceptAppointment = async (id, requester) => {
@@ -226,7 +528,10 @@ export const acceptAppointment = async (id, requester) => {
   appointment.status = "accepted";
   await appointment.save();
 
-  return appointment;
+  // Fire-and-forget email notification to patient about acceptance.
+  void sendAppointmentAcceptedNotificationSafe({ appointment });
+
+  return attachUserNamesToAppointment(appointment);
 };
 
 export const rejectAppointment = async (id, requester) => {
@@ -292,7 +597,7 @@ export const rejectAppointment = async (id, requester) => {
     }
   }
 
-  return appointment;
+  return attachUserNamesToAppointment(appointment);
 };
 
 export const cancelAppointment = async (id, requester) => {
@@ -354,7 +659,7 @@ export const cancelAppointment = async (id, requester) => {
     }
   }
 
-  return appointment;
+  return attachUserNamesToAppointment(appointment);
 };
 
 export const rescheduleAppointment = async (id, requester, data) => {
@@ -395,11 +700,49 @@ export const rescheduleAppointment = async (id, requester, data) => {
     err.statusCode = 400;
     throw err;
   }
+  // Capture the existing schedule before changing it
+  const previousScheduleId = appointment.scheduleId
+    ? appointment.scheduleId.toString()
+    : null;
 
+  // Ensure the new schedule is still bookable and get its current slotCount
+  const newSchedule = await ensureScheduleIsBookable(scheduleId);
+
+  // If moving away from a previous schedule, increase that schedule's slotCount by 1
+  if (previousScheduleId && previousScheduleId !== scheduleId) {
+    try {
+      const response = await axios.get(
+        `${DOCTOR_SERVICE_BASE_URL}/api/doctor-schedules/schedule/${previousScheduleId}`,
+      );
+
+      const schedule = response.data?.schedule || response.data;
+      if (schedule && Number.isInteger(schedule.slotCount)) {
+        await updateScheduleSlotCountFromAppointment(
+          previousScheduleId,
+          schedule.slotCount + 1,
+        );
+      }
+    } catch (error) {
+      // Do not fail the reschedule if this internal update fails.
+      console.error("Failed to increase schedule slotCount on reschedule", {
+        scheduleId: previousScheduleId,
+        error: error?.message,
+      });
+    }
+  }
+
+  // Decrease the new schedule's slotCount by 1
+  await updateScheduleSlotCountFromAppointment(
+    scheduleId,
+    (newSchedule.slotCount ?? 0) - 1,
+  );
+
+  // Move the appointment to the new schedule and generate a new appointment number
   appointment.scheduleId = scheduleId;
+  appointment.appointmentNumber = await generateAppointmentNumber(scheduleId);
   await appointment.save();
 
-  return appointment;
+  return attachUserNamesToAppointment(appointment);
 };
 
 export const updatePaymentStatus = async (id, requester, paymentStatus) => {
@@ -429,7 +772,9 @@ export const updatePaymentStatus = async (id, requester, paymentStatus) => {
     const isPatientOwner =
       appointment.patientId && appointment.patientId.toString() === userId;
     if (!isPatientOwner) {
-      const err = new Error("You can only update payment for your own appointments");
+      const err = new Error(
+        "You can only update payment for your own appointments",
+      );
       err.statusCode = 403;
       throw err;
     }
@@ -437,14 +782,21 @@ export const updatePaymentStatus = async (id, requester, paymentStatus) => {
 
   const allowed = ["pending", "success", "failed"];
   if (!allowed.includes(paymentStatus)) {
-    const err = new Error(`paymentStatus must be one of: ${allowed.join(", ")}`);
+    const err = new Error(
+      `paymentStatus must be one of: ${allowed.join(", ")}`,
+    );
     err.statusCode = 400;
     throw err;
   }
 
   // Business rule: payment can be marked success or failed only when appointment is accepted
-  if (["success", "failed"].includes(paymentStatus) && appointment.status !== "accepted") {
-    const err = new Error("Payment can be 'success' or 'failed' only for accepted appointments");
+  if (
+    ["success", "failed"].includes(paymentStatus) &&
+    appointment.status !== "accepted"
+  ) {
+    const err = new Error(
+      "Payment can be 'success' or 'failed' only for accepted appointments",
+    );
     err.statusCode = 400;
     throw err;
   }
@@ -452,7 +804,12 @@ export const updatePaymentStatus = async (id, requester, paymentStatus) => {
   appointment.paymentStatus = paymentStatus;
   await appointment.save();
 
-  return appointment;
+  if (paymentStatus === "success") {
+    // Fire-and-forget email to doctor about successful payment.
+    void sendPaymentSuccessNotificationSafe({ appointment });
+  }
+
+  return attachUserNamesToAppointment(appointment);
 };
 
 export const completeAppointment = async (id, requester) => {
@@ -471,7 +828,9 @@ export const completeAppointment = async (id, requester) => {
 
   // ensure payment was successful before allowing completion
   if (appointment.paymentStatus !== "success") {
-    const err = new Error("Appointment payment must be successful before completing");
+    const err = new Error(
+      "Appointment payment must be successful before completing",
+    );
     err.statusCode = 400;
     throw err;
   }
@@ -495,7 +854,10 @@ export const completeAppointment = async (id, requester) => {
   appointment.status = "completed";
   await appointment.save();
 
-  return appointment;
+  // Fire-and-forget emails to both doctor and patient about completion.
+  void sendAppointmentCompletedNotificationsSafe({ appointment });
+
+  return attachUserNamesToAppointment(appointment);
 };
 
 export const deleteAppointment = async (id, requester) => {
@@ -513,7 +875,8 @@ export const deleteAppointment = async (id, requester) => {
   }
 
   const userId = requester.id;
-  const isPatientOwner = appointment.patientId && appointment.patientId.toString() === userId;
+  const isPatientOwner =
+    appointment.patientId && appointment.patientId.toString() === userId;
   if (!isPatientOwner) {
     const err = new Error("You can only delete your own appointments");
     err.statusCode = 403;
@@ -522,7 +885,9 @@ export const deleteAppointment = async (id, requester) => {
 
   const allowed = ["pending", "rejected", "cancelled"];
   if (!allowed.includes(appointment.status)) {
-    const err = new Error("Only appointments in pending, rejected, or cancelled status can be deleted");
+    const err = new Error(
+      "Only appointments in pending, rejected, or cancelled status can be deleted",
+    );
     err.statusCode = 400;
     throw err;
   }

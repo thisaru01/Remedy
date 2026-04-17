@@ -1,12 +1,12 @@
 import { createProxyMiddleware } from "http-proxy-middleware";
 
 export const createProxyTo = ({ internalServiceToken }) => {
-  return (target, { addUserContext, basePath }) => {
+  return (target, { addUserContext, basePath, timeoutMs }) => {
     return createProxyMiddleware({
       target,
       changeOrigin: true,
-      timeout: 8000,
-      proxyTimeout: 8000,
+      timeout: timeoutMs || 8000,
+      proxyTimeout: timeoutMs || 8000,
       pathRewrite:
         basePath !== undefined
           ? (path) => {
@@ -20,7 +20,8 @@ export const createProxyTo = ({ internalServiceToken }) => {
           if (addUserContext) {
             proxyReq.setHeader("x-internal-token", internalServiceToken);
             if (req.user?.id) proxyReq.setHeader("x-user-id", req.user.id);
-            if (req.user?.name) proxyReq.setHeader("x-user-name", req.user.name);
+            if (req.user?.name)
+              proxyReq.setHeader("x-user-name", req.user.name);
             if (req.user?.role)
               proxyReq.setHeader("x-user-role", req.user.role);
           }

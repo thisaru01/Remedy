@@ -1,4 +1,9 @@
 import { useParams } from "react-router-dom";
+import PaidAppointments from "@/doctors/components/PaidAppointments.jsx";
+import PendingAppointments from "@/doctors/components/PendingAppointments.jsx";
+import ApprovedAppointments from "@/doctors/components/ApprovedAppointments.jsx";
+import CompletedAppointments from "@/doctors/components/CompletedAppointments.jsx";
+import RejectedAppointments from "@/doctors/components/RejectedAppointments.jsx";
 
 const LABELS = {
   pending: "Pending",
@@ -13,13 +18,16 @@ export default function DoctorAppointments() {
   const label = LABELS[status] ?? "All";
 
   return (
-    <div className="space-y-2">
-      <h1 className="text-2xl font-semibold tracking-tight">
-        {label} Appointments
-      </h1>
-      <p className="text-sm text-muted-foreground">
-        Your {label.toLowerCase()} appointments with patients will appear here.
-      </p>
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold tracking-tight">{label} Appointments</h1>
+      </div>
+
+      {status === "pending" && <PendingAppointments />}
+      {status === "approved" && <ApprovedAppointments />}
+      {status === "paid" && <PaidAppointments />}
+      {status === "completed" && <CompletedAppointments />}
+      {status === "rejected" && <RejectedAppointments />}
     </div>
   );
 }

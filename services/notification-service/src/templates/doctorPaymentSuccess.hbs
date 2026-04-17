@@ -1,0 +1,27 @@
+<div style="font-family: Arial, Helvetica, sans-serif; color: #111827;">
+  <h2 style="color:#111827;margin-top:0;">Payment received for appointment</h2>
+
+  <p>Hi {{#if doctorName}}{{doctorName}}{{else}}Doctor{{/if}},</p>
+
+  <p>
+    A payment has been recorded as
+    <strong>successful</strong>
+    for the appointment with
+    <strong>{{#if patientName}}{{patientName}}{{else}}a patient{{/if}}</strong>
+    scheduled for
+    <strong>{{appointmentDateTime}}</strong>.
+  </p>
+
+  {{#if appointmentNumber}}
+    <p>
+      Appointment number:
+      <strong>{{appointmentNumber}}</strong>.
+    </p>
+  {{/if}}
+
+  <p>
+    You can review payment and appointment details in the Remedy portal.
+  </p>
+
+  <p style="color:#6b7280;margin-top:18px;">Best regards,<br />The Remedy Team</p>
+</div>

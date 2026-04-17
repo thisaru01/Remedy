@@ -1,6 +1,9 @@
 import mongoose from "mongoose";
 import DoctorProfile from "../models/doctorProfileModel.js";
 
+let authDbConnection = null;
+let AuthUserModel = null;
+
 const doctorUpdatableFields = [
   "specialty",
   "contactNo",
@@ -49,6 +52,37 @@ const ensureDoctorRole = ({ userId, role, action }) => {
   }
 };
 
+const getAuthUserModel = async () => {
+  if (AuthUserModel) {
+    return AuthUserModel;
+  }
+
+  const authMongoUri = process.env.AUTH_MONGO_URI;
+  if (!authMongoUri) {
+    throw createServiceError(500, "AUTH_MONGO_URI is not configured");
+  }
+
+  if (!authDbConnection || authDbConnection.readyState !== 1) {
+    authDbConnection = await mongoose.createConnection(authMongoUri).asPromise();
+  }
+
+  AuthUserModel = authDbConnection.model(
+    "User",
+    new mongoose.Schema(
+      {
+        name: String,
+        profilePhoto: String,
+      },
+      {
+        collection: "users",
+        versionKey: false,
+      },
+    ),
+  );
+
+  return AuthUserModel;
+};
+
 export const createDoctorProfile = async (payload) => {
   const { userId } = payload;
 
@@ -69,6 +103,32 @@ export const createDoctorProfile = async (payload) => {
   });
 };
 
+const attachUserToProfile = async (profileDoc) => {
+  if (!profileDoc) return null;
+
+  const profile = profileDoc.toObject ? profileDoc.toObject() : profileDoc;
+  const userId = profile.userId;
+
+  try {
+    const User = await getAuthUserModel();
+    const authUser = await User.findById(userId)
+      .select("name profilePhoto")
+      .lean();
+
+    if (authUser) {
+      profile.user = {
+        name: authUser.name,
+        photo: authUser.profilePhoto,
+      };
+    }
+  } catch (error) {
+    console.error(`Failed to attach user to profile ${userId}:`, error.message);
+    // Continue without user info rather than failing the whole request
+  }
+
+  return profile;
+};
+
 export const getOwnDoctorProfile = async ({ userId, role }) => {
   ensureDoctorRole({ userId, role, action: "access doctor profiles" });
 
@@ -77,7 +137,7 @@ export const getOwnDoctorProfile = async ({ userId, role }) => {
     throw createServiceError(404, "Doctor profile not found");
   }
 
-  return profile;
+  return attachUserToProfile(profile);
 };
 
 export const updateOwnDoctorProfile = async ({ userId, role, updates }) => {
@@ -106,7 +166,7 @@ export const updateOwnDoctorProfile = async ({ userId, role, updates }) => {
     throw createServiceError(400, "No valid profile fields were provided");
   }
 
-  return DoctorProfile.findOneAndUpdate(
+  const updatedProfile = await DoctorProfile.findOneAndUpdate(
     { userId },
     {
       $set: set,
@@ -116,6 +176,8 @@ export const updateOwnDoctorProfile = async ({ userId, role, updates }) => {
       runValidators: true,
     },
   );
+
+  return attachUserToProfile(updatedProfile);
 };
 
 export const submitOwnDoctorVerification = async ({
@@ -159,7 +221,7 @@ export const submitOwnDoctorVerification = async ({
     );
   }
 
-  return DoctorProfile.findOneAndUpdate(
+  const updatedProfile = await DoctorProfile.findOneAndUpdate(
     { userId },
     {
       $setOnInsert: { userId },
@@ -178,6 +240,8 @@ export const submitOwnDoctorVerification = async ({
       runValidators: true,
     },
   );
+
+  return attachUserToProfile(updatedProfile);
 };
 
 export const getApprovedDoctorProfiles = async () => {
@@ -199,6 +263,36 @@ export const getApprovedDoctorProfilesBySpecialty = async ({ specialty }) => {
   return {
     specialty,
     profiles,
+  };
+};
+
+export const getDoctorFullDetails = async ({ doctorUserId }) => {
+  if (!doctorUserId) {
+    throw createServiceError(400, "doctorUserId is required");
+  }
+
+  if (!mongoose.isValidObjectId(doctorUserId)) {
+    throw createServiceError(400, "Invalid doctorUserId");
+  }
+
+  const profileDoc = await DoctorProfile.findOne({ userId: doctorUserId });
+  if (!profileDoc) {
+    throw createServiceError(404, "Doctor profile not found");
+  }
+
+  const User = await getAuthUserModel();
+  const authUser = await User.findById(doctorUserId)
+    .select("name profilePhoto")
+    .lean();
+
+  if (!authUser) {
+    throw createServiceError(404, "Doctor user not found in auth records");
+  }
+
+  return {
+    ...profileDoc.toObject(),
+    doctorName: authUser.name,
+    profilePhoto: authUser.profilePhoto,
   };
 };
 
@@ -234,9 +328,13 @@ export const getDoctorProfilesByVerificationStatus = async ({
     "verification.status": verificationStatus,
   }).sort({ updatedAt: -1 });
 
+  const profilesWithUsers = await Promise.all(
+    profiles.map((profile) => attachUserToProfile(profile)),
+  );
+
   return {
     verificationStatus,
-    profiles,
+    profiles: profilesWithUsers,
   };
 };
 
