@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: remedy-frontend:local
-          imagePullPolicy: IfNotPresent
+          image: thisaru01/remedy-frontend:v1
+          imagePullPolicy: Always
           ports:
             - containerPort: 5173
           env:

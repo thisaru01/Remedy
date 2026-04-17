@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
         - name: telemedicine-service
-          image: remedy-telemedicine-service:local
-          imagePullPolicy: IfNotPresent
+          image: thisaru01/remedy-telemedicine-service:v1
+          imagePullPolicy: Always
           ports:
             - containerPort: 5000
           env:

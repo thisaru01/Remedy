@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
         - name: notification-service
-          image: remedy-notification-service:local
-          imagePullPolicy: IfNotPresent
+          image: thisaru01/remedy-notification-service:v1
+          imagePullPolicy: Always
           ports:
             - containerPort: 5007
           env:

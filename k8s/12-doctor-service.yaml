@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
         - name: doctor-service
-          image: remedy-doctor-service:local
-          imagePullPolicy: IfNotPresent
+          image: thisaru01/remedy-doctor-service:v1
+          imagePullPolicy: Always
           ports:
             - containerPort: 5000
           env:

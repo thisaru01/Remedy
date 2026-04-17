@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
         - name: ai-service
-          image: remedy-ai-service:local
-          imagePullPolicy: IfNotPresent
+          image: thisaru01/remedy-ai-service:v1
+          imagePullPolicy: Always
           ports:
             - containerPort: 5000
           env:

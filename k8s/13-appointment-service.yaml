@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
         - name: appointment-service
-          image: remedy-appointment-service:local
-          imagePullPolicy: IfNotPresent
+          image: thisaru01/remedy-appointment-service:v1
+          imagePullPolicy: Always
           ports:
             - containerPort: 5000
           env:

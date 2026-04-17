@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
         - name: auth-service
-          image: remedy-auth-service:local
-          imagePullPolicy: IfNotPresent
+          image: thisaru01/remedy-auth-service:v1
+          imagePullPolicy: Always
           ports:
             - containerPort: 5000
           env:

@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
         - name: gateway
-          image: remedy-gateway:local
-          imagePullPolicy: IfNotPresent
+          image: thisaru01/remedy-gateway:v1
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
           env:
