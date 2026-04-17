@@ -41,7 +41,7 @@ const defaultItems = [
     children: [
       { title: "Approved", href: "/patient/appointments/approved" },
       { title: "Pending", href: "/patient/appointments/pending" },
-        { title: "Completed", href: "/patient/appointments/completed" },
+      { title: "Completed", href: "/patient/appointments/completed" },
       { title: "Rejected", href: "/patient/appointments/rejected" },
       { title: "Canceled", href: "/patient/appointments/canceled" },
     ],
@@ -50,10 +50,7 @@ const defaultItems = [
     title: "Reports",
     href: "/patient/reports",
     icon: FileText,
-    children: [
-      { title: "General", href: "/patient/reports/general" },
-      { title: "Appointment", href: "/patient/reports/appointment" },
-    ],
+    children: [{ title: "General", href: "/patient/reports/general" }],
   },
 ];
 
