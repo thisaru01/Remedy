@@ -3,15 +3,11 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const apiKey = process.env.GEMINI_API_KEY;
 
 if (!apiKey) {
-  // Fail fast so misconfiguration is obvious in logs/health
-  // but keep this service optional at the gateway level.
   // eslint-disable-next-line no-console
   console.warn("GEMINI_API_KEY is not set. AI symptom checker will not work.");
 }
 
-// Default model for this service; can be overridden via GEMINI_MODEL
-// You requested to use gemini-2.5-flash specifically.
-const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
 
 let model = null;
 if (apiKey) {

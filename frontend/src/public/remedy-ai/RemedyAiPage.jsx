@@ -18,6 +18,8 @@ import { SymptomsFormCard } from "@/public/remedy-ai/components/SymptomsFormCard
 import { AssessmentHistoryCard } from "@/public/remedy-ai/components/AssessmentHistoryCard.jsx";
 import { AssessmentResultsCard } from "@/public/remedy-ai/components/AssessmentResultsCard.jsx";
 
+const AI_TIMEOUT_MS = Number(import.meta.env.VITE_AI_TIMEOUT_MS) || 20000;
+
 function getUrgencyBadgeClasses(urgency) {
   switch (urgency) {
     case "high":
@@ -59,6 +61,7 @@ export default function RemdedyAiPage() {
       try {
         const response = await axios.get("/ai/symptom-check/history", {
           params: { limit: 20 },
+          timeout: AI_TIMEOUT_MS,
         });
         const items = response?.data?.items ?? [];
         if (!cancelled) {
@@ -99,7 +102,9 @@ export default function RemdedyAiPage() {
         additionalInfo: additionalInfo || undefined,
       };
 
-      const response = await axios.post("/ai/symptom-check", payload);
+      const response = await axios.post("/ai/symptom-check", payload, {
+        timeout: AI_TIMEOUT_MS,
+      });
       const nextAssessment = response?.data?.assessment ?? null;
       setAssessment(nextAssessment);
       setSelectedHistoryId(null);

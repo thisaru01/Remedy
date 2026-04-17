@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-service
+  namespace: remedy
+  labels:
+    app: payment-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payment-service
+  template:
+    metadata:
+      labels:
+        app: payment-service
+    spec:
+      containers:
+        - name: payment-service
+          image: thisaru01/remedy-payment-service:v1
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5000
+          env:
+            - name: PORT
+              value: "5000"
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: remedy-env
+                  key: PAYMENT_MONGO_URI
+            - name: APPOINTMENT_SERVICE_URL
+              value: "http://appointment-service:5000"
+            - name: STRIPE_SUCCESS_URL
+              value: "http://localhost:30173/patient/payments/success"
+            - name: STRIPE_CANCEL_URL
+              value: "http://localhost:30173/patient/payments/cancel"
+          envFrom:
+            - secretRef:
+                name: remedy-env
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-service
+  namespace: remedy
+spec:
+  type: ClusterIP
+  selector:
+    app: payment-service
+  ports:
+    - name: http
+      port: 5000
+      targetPort: 5000

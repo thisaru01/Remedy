@@ -36,13 +36,15 @@ import {
 const defaultItems = [
   { title: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { title: "Profile", href: "/admin/profile", icon: CircleUser },
+  { title: "Transactions", href: "/admin/transactions", icon: FileText },
   {
     title: "Users",
     href: "/admin/users",
     icon: Users,
     children: [
+      { title: "Accounts", href: "/admin/users/accounts" },
       { title: "Doctors", href: "/admin/users/doctors" },
-      { title: "Patients", href: "/admin/users/patients" },
+      // { title: "Patients", href: "/admin/users/patients" },
     ],
   },
 ];

@@ -6,6 +6,7 @@ import AdminRouteLayout from "./admin/AdminRouteLayout.jsx";
 import AdminDashboard from "./admin/pages/AdminDashboard.jsx";
 import AdminProfile from "./admin/pages/AdminProfile.jsx";
 import AdminUsers from "./admin/pages/AdminUsers.jsx";
+import AdminTransactions from "./admin/pages/AdminTransactions.jsx";
 
 // Patient
 import PatientRouteLayout from "./patients/PatientRouteLayout.jsx";
@@ -50,6 +51,7 @@ export default function App() {
           <Route path="users">
             <Route path=":type" element={<AdminUsers />} />
           </Route>
+          <Route path="transactions" element={<AdminTransactions />} />
           <Route path="*" element={<Navigate to="." replace />} />
         </Route>
 

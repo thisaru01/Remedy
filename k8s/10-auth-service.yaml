@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  namespace: remedy
+  labels:
+    app: auth-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-service
+  template:
+    metadata:
+      labels:
+        app: auth-service
+    spec:
+      containers:
+        - name: auth-service
+          image: thisaru01/remedy-auth-service:v1
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5000
+          env:
+            - name: PORT
+              value: "5000"
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: remedy-env
+                  key: AUTH_MONGO_URI
+            - name: PATIENT_SERVICE_URL
+              value: "http://patient-service:5000"
+            - name: DOCTOR_SERVICE_URL
+              value: "http://doctor-service:5000"
+          envFrom:
+            - secretRef:
+                name: remedy-env
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  namespace: remedy
+spec:
+  type: ClusterIP
+  selector:
+    app: auth-service
+  ports:
+    - name: http
+      port: 5000
+      targetPort: 5000

@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: doctor-service
+  namespace: remedy
+  labels:
+    app: doctor-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: doctor-service
+  template:
+    metadata:
+      labels:
+        app: doctor-service
+    spec:
+      containers:
+        - name: doctor-service
+          image: thisaru01/remedy-doctor-service:v1
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5000
+          env:
+            - name: PORT
+              value: "5000"
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: remedy-env
+                  key: DOCTOR_MONGO_URI
+          envFrom:
+            - secretRef:
+                name: remedy-env
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: doctor-service
+  namespace: remedy
+spec:
+  type: ClusterIP
+  selector:
+    app: doctor-service
+  ports:
+    - name: http
+      port: 5000
+      targetPort: 5000
