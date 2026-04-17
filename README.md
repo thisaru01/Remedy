@@ -1,8 +1,6 @@
-# Remedy
+# Remedy - AI-Enabled Smart Healthcare Platform
 
-## AI-Enabled Smart Healthcare Platform
-
-Remedy is a **cloud-native healthcare appointment and telemedicine system** developed using a **Microservices Architecture**. It enables patients and doctors to interact through a scalable, secure, and containerized platform.
+Remedy is a **cloud-native healthcare platform** built using a **Microservices Architecture**. It incorporates AI-driven symptom checking, appointment scheduling, and telemedicine to provide a comprehensive digital healthcare experience.
 
 ---
 
@@ -10,14 +8,16 @@ Remedy is a **cloud-native healthcare appointment and telemedicine system** deve
 
 The platform provides a complete digital healthcare solution including:
 
-- Patient management
-- Doctor management
-- Appointment scheduling
-- Secure online payments
-- Real-time notifications
-- Live video consultations (Telemedicine)
+- **Authentication & Authorization:** Secure JWT-based access control.
+- **Patient Management:** Profile management and medical history tracking.
+- **Doctor Management:** Professional profiles and availability scheduling.
+- **Appointment System:** Seamless booking and status tracking.
+- **Telemedicine:** Integrated video consultation services.
+- **Payment Processing:** Secure online transactions.
+- **Notifications:** Real-time email and SMS alerts.
+- **AI Symptom Checker:** Intelligent preliminary health assessments using Gemini AI.
 
-All services are independently deployed using **Docker** and orchestrated using **Kubernetes**.
+All services are containerized and can be orchestrated using **Docker** or **Kubernetes**.
 
 ---
 
@@ -29,38 +29,20 @@ Remedy/
 ├── frontend/                     # React frontend application
 │
 ├── services/                     # Backend microservices
-│   ├── auth-service/
-│   │   ├── src/
-│   │   │   ├── controllers/
-│   │   │   ├── models/
-│   │   │   ├── routes/
-│   │   │   ├── config/
-│   │   │   ├── middleware/
-│   │   │   └── app.js
-│   │   ├── server.js
-│   │   ├── Dockerfile
-│   │   ├── package.json
-│   │   └── .env
-│   │
-│   ├── patient-service/
-│   ├── doctor-service/
-│   ├── appointment-service/
-│   ├── telemedicine-service/
-│   ├── payment-service/
-│   └── notification-service/
+│   ├── auth-service/             # Identity & Access Management
+│   ├── patient-service/          # Patient Profiles & Records
+│   ├── doctor-service/           # Doctor Profiles & Schedules
+│   ├── appointment-service/      # Booking & Scheduling Logic
+│   ├── ai-service/               # AI-powered Symptom Checking
+│   ├── telemedicine-service/      # Video Consultation Management
+│   ├── payment-service/          # Billing & Transactions
+│   └── notification-service/     # Communication Engine (Email/SMS)
 │
 ├── gateway/                      # Express API Gateway
 │
+├── k8s/                          # Kubernetes Manifests
 │
-├── docker-compose.yml            # Local container orchestration
-│
-├── k8s/                          # Kubernetes configurations
-│   ├── patient-deployment.yaml
-│   ├── patient-service.yaml
-│   ├── doctor-deployment.yaml
-│   └── ...
-│
-├── .env                          # Shared environment variables
+├── docker-compose.yml            # Local Orchestration Configuration
 └── README.md
 ```
 
@@ -68,54 +50,51 @@ Remedy/
 
 ## Microservices
 
-### auth Service
+### Auth Service
 
-- User registration and login
-- Authentication and authorization
-- Updating password and status
+- User registration, login, and secure session management.
+- Role-based Access Control (RBAC) for Patients, Doctors, and Admins.
 
 ### Patient Service
 
-- Patient registration and authentication
-- Patient Profile management
-- Uploading medical reports
-- Viewing medical history and prescriptions
+- Manages patient profiles and medical records.
+- Secure storage and retrieval of medical history.
 
 ### Doctor Service
 
-- Doctor registration
-- Profile and availability management
-- Viewing patient records
-- Issuing prescriptions
+- Manages doctor profiles, specialties, and availability.
+- Enables doctors to manage their consultation schedules.
 
 ### Appointment Service
 
-- Search doctors by specialty
-- Book, update, and cancel appointments
-- Accept / reject appointments
-- Track appointment status
+- Handles the end-to-end appointment lifecycle (Booking, Approval, Cancellation).
+- Links patients with available doctors based on specialty.
 
 ### Telemedicine Service
 
-- Create and manage video consultation sessions
-- Provide join links for patients and doctors
-- Enable real-time doctor–patient communication
+- Manages secure video consultation rooms.
+- Generates and validates access links for sessions.
 
 ### Payment Service
 
-- Handle secure online payments
-- Manage transaction records
+- Processes secure online payments.
+- Tracks transaction status and history.
 
 ### Notification Service
 
-- Send email and SMS notifications
-- Appointment confirmations and updates
+- Dispatches automated email and SMS notifications.
+- Keeps users informed about appointment updates and reminders.
+
+### AI Service
+
+- AI-powered symptom checking and health analysis.
+- Integration with **Google Gemini AI**.
+- Provides preliminary medical recommendations.
 
 ### API Gateway (Express)
 
-- Central entry point for all client requests
-- Verifies JWT from `Authorization: Bearer <token>`
-- Routes requests to appropriate services and forwards trusted user context internally
+- Central entry point for all client requests.
+- Handles routing, JWT verification, and security enforcement.
 
 ---
 
@@ -124,76 +103,125 @@ Remedy/
 - **Frontend:** React.js
 - **Backend:** Node.js + Express
 - **Database:** MongoDB
-- **API Gateway:** NGINX
+- **AI Integration:** Google Gemini
 - **Containerization:** Docker
 - **Orchestration:** Kubernetes
-- **Authentication:** JWT
+- **Authentication:** JWT (JSON Web Tokens)
 
 ---
 
-## Authentication & Authorization
+# README – Deployment Guide
 
-- JWT-based authentication is implemented
-- Role-based access control:
-  - Patient
-  - Doctor
-  - Admin
-- Secure communication between services
+## OVERVIEW
 
----
+This project is a cloud-native healthcare platform built using a microservices architecture. It includes services for authentication, patient management, doctor management, appointments, payments, notifications, AI symptom checking, and telemedicine.
 
-## System Workflow
+All services are containerized using Docker and deployed using Kubernetes. Prebuilt images are hosted on Docker Hub to allow deployment without requiring source code or local builds.
 
-1. Patient registers and logs in
-2. Patient searches for doctors
-3. Appointment is booked
-4. Payment is completed
-5. Notification is sent
-6. Telemedicine Service creates a video session
-7. Patient and doctor join the consultation
-8. Doctor issues prescription
+## PREREQUISITES
 
----
+- Docker
+- Kubernetes (Minikube / Docker Desktop / Kubernetes cluster)
+- kubectl CLI
 
-## Running the System (Docker)
+## DOCKER HUB IMAGES
 
-### 1. Clone repository
+All microservices are hosted on Docker Hub under:
+
+**Docker Hub Username: thisaru01**
+
+**Images:**
+
+- `thisaru01/remedy-frontend:v1`
+- `thisaru01/remedy-gateway:v1`
+- `thisaru01/remedy-auth-service:v1`
+- `thisaru01/remedy-patient-service:v1`
+- `thisaru01/remedy-doctor-service:v1`
+- `thisaru01/remedy-appointment-service:v1`
+- `thisaru01/remedy-telemedicine-service:v1`
+- `thisaru01/remedy-payment-service:v1`
+- `thisaru01/remedy-notification-service:v1`
+- `thisaru01/remedy-ai-service:v1`
+
+Kubernetes automatically pulls these images during deployment.
+
+## DEPLOYMENT STEPS
+
+### Step 1: Clone Repository
 
 ```bash
-git clone https://github.com/your-repo/Remedy.git
+git clone https://github.com/thisaru01/Remedy
 cd Remedy
 ```
 
-### 2. Start all services
+### Step 2: Configure Environment Variables
 
 ```bash
-docker compose up --build
+cp .env.example .env
 ```
 
-### 3. Access the system
+Update values (database URIs, JWT secrets, API keys)
 
-- Frontend: http://localhost:3000
-- API Gateway: http://localhost:8080
-
-### Example gateway calls
-
-- Login: `POST http://localhost:8080/api/auth/login`
-- Update patient profile (current user): `PUT http://localhost:8080/api/patient-profiles/me`
-  - Header: `Authorization: Bearer <token>`
-
----
-
-## Kubernetes Deployment
-
-Apply all configurations:
+### Step 3: Create Kubernetes Namespace
 
 ```bash
-kubectl apply -f k8s/
+kubectl apply -f k8s/00-namespace.yaml
 ```
 
-Check running components:
+### Step 4: Create Secrets
 
 ```bash
-kubectl get pods
-kubectl get services
+kubectl create secret generic remedy-env --from-env-file=.env -n remedy
 ```
+
+### Step 5: Deploy All Services
+
+```bash
+kubectl apply -n remedy -f k8s/
+```
+
+At this stage Kubernetes will:
+
+- Pull Docker images from Docker Hub
+- Create pods and services
+- Start all microservices
+
+## ACCESSING THE APPLICATION
+
+**API Gateway Access:**
+`http://<NODE-IP>:30080`
+
+**Frontend Access:**
+`http://<NODE-IP>:30173`
+
+**OR (for local development):**
+
+- `http://localhost:30080`
+- `http://localhost:30173`
+
+## VERIFICATION COMMANDS
+
+```bash
+kubectl get pods -n remedy
+kubectl get svc -n remedy
+kubectl logs <pod-name> -n remedy
+```
+
+## TROUBLESHOOTING
+
+**Restart deployments:**
+`kubectl rollout restart deployment -n remedy`
+
+**Re-deploy system:**
+
+```bash
+kubectl delete -n remedy -f k8s/
+kubectl apply -n remedy -f k8s/
+```
+
+## IMPORTANT NOTES
+
+- All Docker images are hosted on Docker Hub and publicly accessible.
+- Kubernetes automatically pulls images during deployment.
+- No source code build is required to run the system.
+- Ensure `.env` file is properly configured before deployment.
